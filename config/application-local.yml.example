@@ -1,0 +1,13 @@
+# 本文件仅为本地配置模板；复制为 application-local.yml 后再填写真实 Key。
+# application-local.yml 已被 Git 忽略，禁止将真实 Key 写入本模板或提交记录。
+# 应用创建后，以 local Profile 启动并从项目根目录读取 ./config/。
+spring:
+  ai:
+    dashscope:
+      api-key: "REPLACE_WITH_YOUR_DASHSCOPE_API_KEY"
+      chat:
+        options:
+          model: qwen-plus
+      embedding:
+        options:
+          model: text-embedding-v4

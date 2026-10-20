@@ -42,10 +42,10 @@ flowchart LR
 
 | 用途 | 当前契约 | Agent 使用方式 |
 |---|---|---|
-| 当前身份 | `GET /api/user/current`，返回 `UserVO`（含 `id`、`userRole`、`userStatus`） | 每次开始任务及确认前验证管理员；会话失效则暂停 |
+| 当前身份 | `GET /api/user/current`，返回 `UserVO`（含 `id`、`userRole`、`userStatus`） | 每次开始任务及确认前检查 Session 中的管理员身份；**当前实现返回登录时的用户快照，不能据此证明角色和封禁状态仍与数据库一致** |
 | 工单详情 | `GET /api/workOrder/get?id={id}`，返回 `WorkOrderVO` | 初读、确认前复读、分配超时后核查；只处理 `type=1`、`status=0`、`advisorId=null` 的试驾工单 |
-| 顾问列表 | `GET /api/user/list/advisor`，返回 `List<UserVO>`，管理员限定 | 校验候选顾问确实在当前名单中 |
-| 工作量 | `GET /api/workOrder/workload`，返回按顾问汇总的计数，管理员限定 | 与顾问列表按 ID 关联；无工作量行的顾问不能被推断为不存在，计数含义以当前字段为准 |
+| 顾问列表 | `GET /api/user/list/advisor`，返回 `List<UserVO>`，管理员限定 | 校验候选顾问在当前名单中且 `userStatus=0`；下游列表目前只按角色筛选，不能把被封禁者当候选 |
+| 工作量 | `GET /api/workOrder/workload`，返回按顾问汇总的计数，管理员限定 | 与成功查询的顾问列表按 ID 关联；零工单顾问不会出现在工作量行中，两次查询均成功时才可把缺席计作零 |
 | 分配 | `POST /api/workOrder/assign`，JSON 只有 `id` 和 `advisorId`，返回 `BaseResponse<Boolean>`，管理员限定 | 仅在管理员确认与复核之后调用一次；下游无幂等键、无调用方版本入参 |
 
 依据：`/Users/zz/carProject/src/main/java/com/zz/carsystem/controller/` 中的 `UserController.java`、`WorkOrderController.java`；`model/request/WorkOrderAssignRequest.java`；`model/vo/WorkOrderVO.java`、`AdvisorWorkloadVO.java`；`common/BaseResponse.java`。源码中的分配实现按当前状态做条件更新，但确认前读取与分配请求之间仍有跨系统竞态。工单内容也不是下游分配请求的条件字段。
@@ -66,7 +66,9 @@ flowchart LR
 
 ### 3.3 Session、权限与 CSRF 的联调门槛
 
-第一版部署在同源入口下：例如反向代理把 `/api/agent/**` 转给 Agent，其余 `carSystem` 路径转给原服务。浏览器先在 `carSystem` 登录；Agent 只把**必要的 Session Cookie**转发给 `carSystem`，用 `/user/current` 校验服务端返回的管理员角色（`userRole=2`）及账户状态。Agent 不收集管理员密码，不把 Cookie 放入任务、日志、模型输入或审计记录。确认与执行前重新验证身份。Agent 自己的写请求要求同源 `Origin` 校验及与该登录会话绑定、由服务端签发的 CSRF Token；单靠 Cookie 或自定义前端按钮不足以防 CSRF。
+第一版部署在同源入口下：例如反向代理把 `/api/agent/**` 转给 Agent，其余 `carSystem` 路径转给原服务。浏览器先在 `carSystem` 登录；Agent 只把**必要的 Session Cookie**转发给 `carSystem`，用 `/user/current` 检查返回的管理员角色（`userRole=2`）及账户状态。Agent 不收集管理员密码，不把 Cookie 放入任务、日志、模型输入或审计记录。确认与执行前重新检查身份。Agent 自己的写请求要求同源 `Origin` 校验及与该登录会话绑定、由服务端签发的 CSRF Token；单靠 Cookie 或自定义前端按钮不足以防 CSRF。
+
+**阶段 0 已发现授权新鲜度缺口：**当前 `carSystem` 登录时把 `User` 对象存入 Session，`/user/current` 从该 Session 对象返回角色和状态。对新建模拟账号的[联调实测](../../verification/stage-0/session-matrix.md)表明，账号被降级或封禁后，旧 Session 仍被管理员接口放行。故重复调用 `/user/current` 能发现退出，却不能作为“管理员仍有最新权限”的充分证据；自然过期仍待验证。真实分配路径在补齐可验证的最新权限机制前保持关闭；可选方案是由 `carSystem` 提供实时身份/角色校验或主动失效旧 Session，具体改动需另行确认，不由 Agent 直接查库替代。
 
 这是待联调方案。阶段 0 必须实测 Cookie 名称、Domain、Path、SameSite、代理转发、Session 过期、退出登录、角色变更及 CSRF 正反例。联调前不开放真实分配路径。如果当前部署不能满足同源和 Cookie 传递，先暂停真实分配，重新设计认证入口，不在代码中嵌入管理员账号或长期 Session。
 
@@ -110,7 +112,7 @@ EXECUTING --> SUCCEEDED | DEFINITELY_FAILED | OUTCOME_UNKNOWN
 
 工具输入用明确的类型和白名单校验，输出限量并脱敏；未知工具名、越界参数或同一工具超预算立即停止。初始预算：每次生成建议至多 2 次模型调用、每类只读工具至多 1 次模型请求；只读业务查询每个接口至多 1 次失败重试；连接与读取超时分别以 3 秒、5 秒作为联调起点；分配 POST 不自动重试。这些是设计默认值，阶段 0 记录联调结果后方可锁定。提示词分开写角色规则、可信工单摘要、检索证据与工具说明，版本化保存；模型输出先转成固定字段，再做程序校验，不把自然语言文本直接当作执行命令。
 
-确认界面明确显示：原工单 ID/状态/内容与读取时间、Agent 本地补充的门店和试驾时间、建议顾问及工作量时间、政策引用、建议有效期，以及“确认后才调用分配”。管理员拒绝只记录决定；修改补充信息会废弃旧建议。确认后重新查询当前用户、工单、目标顾问与必要政策版本。若工单的 `status`、`advisorId`、`type`、`content`、`title` 或 `updateTime` 与形成建议时不一致，或补充信息/政策版本已过期，则旧建议无效。相关字段比较只能减小风险；下游分配接口没有版本入参，复核和 POST 之间仍可能发生内容变更，该剩余风险须在演示与报告中如实说明。
+确认界面明确显示：原工单 ID/状态/内容与读取时间、Agent 本地补充的门店和试驾时间、建议顾问及工作量时间、政策引用、建议有效期，以及“确认后才调用分配”。管理员拒绝只记录决定；修改补充信息会废弃旧建议。确认后重新查询当前用户、工单、目标顾问与必要政策版本；当前用户检查还须满足上文“授权新鲜度”门槛。若工单的 `status`、`advisorId`、`type`、`content`、`title` 或 `updateTime` 与形成建议时不一致，或补充信息/政策版本已过期，则旧建议无效。相关字段比较只能减小风险；下游分配接口没有版本入参，复核和 POST 之间仍可能发生内容变更，该剩余风险须在演示与报告中如实说明。
 
 ## 6. 分配结果、重复确认与未知结果
 

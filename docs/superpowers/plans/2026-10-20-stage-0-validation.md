@@ -87,7 +87,7 @@
 - [ ] **Step 1: 先写失败的兼容性测试。** `DependencySmokeTest` 至少检查 Java 运行版本为 21，并能加载同一项目中的 `ChatModel`、`EmbeddingModel` 与 PGvector 相关类。先在空探针项目执行 `mvn -q test`，预期因缺依赖或类失败；保留该输出摘要。
 - [ ] **Step 2: 添加最小依赖。** 候选从 Boot 3.5.8、Spring AI 1.1.2、Spring AI Alibaba 1.1.2.2 起步，使用各自 BOM/官方推荐的依赖管理方式；具体模块名称从锁定版本的官方文档核对，不从 Spring AI 2.x 文档复制。
 - [ ] **Step 3: 运行 `mvn -q test` 与 `mvn dependency:tree`。** 测试通过且依赖树不存在两个互不兼容的 Spring AI 主版本，才记录“编译兼容”。失败则在 `compatibility.md` 记录根因及下一候选，不在业务仓库补版本覆盖凑通过。
-- [ ] **Step 4: 可用时做最小真实调用。** API Key 只由本地环境变量提供；用模拟短文本调用所选千问模型和 `text-embedding-v4`，记录模型 ID、地域、向量维度、成功/错误码和耗时，不记录 Key 或响应中的个人信息。无 Key 时标“真实调用未验证”，不得写成通过。
+- [ ] **Step 4: 可用时做最小真实调用。** 用户选择把 API Key 填入 Git 忽略的本地 YAML（模板见 `config/application-local.yml.example`）；用模拟短文本调用所选千问模型和 `text-embedding-v4`，记录模型 ID、地域、向量维度、成功/错误码和耗时，不记录 Key 或响应中的个人信息。无 Key 时标“真实调用未验证”，不得写成通过。
 - [ ] **Step 5: 验收并提交。** 只有 Java 21、Maven 测试、依赖树和真实调用均有成功证据，才把该组合写为已验证；否则保留候选状态。探针及脱敏结果可单独提交，且不得被产品直接依赖。
 
 ### Task 5: 阶段 0 定版与交接
