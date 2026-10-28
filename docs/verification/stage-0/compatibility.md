@@ -23,4 +23,4 @@
 
 ## 未完成的真实调用
 
-截至 2026-10-28，本地 `config/application-local.yml` 的 DashScope API Key 仍是占位值；未调用千问或 `text-embedding-v4`，没有模型 ID、地域、耗时或模型输出的 1024 维实测结果。已准备[本地 YAML 模板](../../../config/application-local.yml.example)，其属性路径参照 [Spring AI Alibaba 官方示例](https://github.com/spring-ai-alibaba/website/blob/main/agents-docs/dataagent/quick-start.md)；真实 Key 由用户稍后填入 Git 忽略的外部配置，不进入仓库、JAR 或日志。应用骨架可启动，但尚未加入 AI 自动配置依赖；模板中的模型配置未做真实调用验证。PostgreSQL + pgvector 仅通过隔离容器中的 SQL 探针，**未连接 Java 应用**。这两项仍是阶段 0 的未通过门槛。
+截至 2026-10-28，用户尚未提供模型 API Key；未调用千问或 DeepSeek，也没有真实模型 ID、地域、耗时、Token 用量或 Embedding 维度的实测结果。原 [DashScope YAML 模板](../../../config/application-local.yml.example)仍是未启用候选。主项目现已加入 Spring AI Alibaba Agent Framework 1.1.2.2 与 Spring AI OpenAI 兼容 Starter 1.1.2；[DeepSeek 接线记录](deepseek-framework.md)说明了本机模拟接口测试及独立的本地 YAML。真实 Key 只在用户的 Git 忽略配置中填写，不进入仓库、JAR 或日志。PostgreSQL + pgvector 仅通过隔离容器中的 SQL 探针，**未连接 Java 应用**。模型真实调用与向量检索仍是阶段 0 的未通过门槛。

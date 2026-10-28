@@ -1,4 +1,5 @@
 /config/application-local.yml
+/config/application-deepseek.yml
 /src/main/resources/application-local.yml
 /target/
 /.idea/

@@ -1,0 +1,6 @@
+# 复制为 config/application-deepseek.yml，再填入自己的 DeepSeek API Key。
+# 实际文件已被 Git 忽略；不要把真实 Key 发到聊天里或提交到仓库。
+spring:
+  ai:
+    openai:
+      api-key: "REPLACE_WITH_YOUR_DEEPSEEK_API_KEY"

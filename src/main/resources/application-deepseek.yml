@@ -1,0 +1,12 @@
+spring:
+  ai:
+    model:
+      chat: openai
+      embedding: none
+    openai:
+      base-url: https://api.deepseek.com
+      api-key: ${DEEPSEEK_API_KEY}
+      chat:
+        completions-path: /chat/completions
+        options:
+          model: deepseek-flash
