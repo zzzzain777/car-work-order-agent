@@ -19,8 +19,8 @@
 3. **绿灯：**加入 DashScope starter 和 PGvector starter 后，同一 Maven 镜像运行 `mvn -q test` 成功。Surefire 报告：1 个测试、0 失败、0 错误、0 跳过。测试同时加载 Spring AI `ChatModel`、`EmbeddingModel`、`PgVectorStore` 与阿里巴巴 `DashScopeChatModel`，并检查运行 JDK 为 21。
 4. **依赖树：**`mvn dependency:tree` 解析的 Spring Boot 组件为 3.5.8；所有列出的 Spring AI 组件为 1.1.2；DashScope starter、自动配置与实现为 1.1.2.2。本次未见混入 Spring AI 2.x。完整依赖树是本地探针 `target/dependency-tree.txt`，构建产物不提交。
 
-**结论：**这一组版本的**最小编译与类型加载已验证**。独立的[数据库 SQL 探针](pgvector-probe.md)也验证了扩展及 1024 维操作；尚未证明此探针项目与 pgvector 的 Java 连接、真实模型调用、Embedding 输出维度或语义检索行为，因此不能把技术选型写成全面通过。
+**结论：**这一组版本的**最小编译与类型加载已验证**。独立的[数据库 SQL 探针](pgvector-probe.md)也验证了扩展及 1024 维操作；主应用另有一次 [DeepSeek 真实短文本联通](deepseek-framework.md)。pgvector 的 Java 连接、Embedding 输出维度和语义检索行为仍未验证，因此不能把技术选型写成全面通过。
 
-## 未完成的真实调用
+## 主项目的真实调用进展
 
-截至 2026-10-28，用户尚未提供模型 API Key；未调用千问或 DeepSeek，也没有真实模型 ID、地域、耗时、Token 用量或 Embedding 维度的实测结果。原 [DashScope YAML 模板](../../../config/application-local.yml.example)仍是未启用候选。主项目现已加入 Spring AI Alibaba Agent Framework 1.1.2.2 与 Spring AI OpenAI 兼容 Starter 1.1.2；[DeepSeek 接线记录](deepseek-framework.md)说明了本机模拟接口测试及独立的本地 YAML。真实 Key 只在用户的 Git 忽略配置中填写，不进入仓库、JAR 或日志。PostgreSQL + pgvector 仅通过隔离容器中的 SQL 探针，**未连接 Java 应用**。模型真实调用与向量检索仍是阶段 0 的未通过门槛。
+截至 2026-10-28，千问和 Embedding 尚未真实调用；原 [DashScope YAML 模板](../../../config/application-local.yml.example)仍是未启用候选。主项目已加入 Spring AI Alibaba Agent Framework 1.1.2.2 与 Spring AI OpenAI 兼容 Starter 1.1.2；[DeepSeek 联通记录](deepseek-framework.md)证明 `deepseek-flash` 的一次真实短文本调用成功，响应模型、耗时和 Token 用量已有单次实测值。真实 Key 仅在用户被 Git 忽略的本地 YAML 中，本次测试和文档均未输出 Key。PostgreSQL + pgvector 仅通过隔离容器中的 SQL 探针，**未连接 Java 应用**；向量检索仍是阶段 0 的未通过门槛。
