@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -20,8 +21,13 @@ class DeepSeekLiveSmokeTest {
     @Autowired
     private ModelTextGenerator generator;
 
+    @Value("${spring.ai.openai.api-key}")
+    private String apiKey;
+
     @Test
     void receivesOneResponseForSimulatedText() {
+        assertFalse(apiKey.isBlank() || apiKey.startsWith("REPLACE_"),
+                "先在 config/application-deepseek.yml 填写真实 Key");
         long startedAt = System.nanoTime();
         ChatResponse response = generator.generate("这是模拟测试。请只回复：收到");
         long elapsedMs = (System.nanoTime() - startedAt) / 1_000_000;

@@ -6,7 +6,7 @@
 
 1. 以 Maven 项目打开仓库根目录的 `pom.xml`，项目 SDK 和运行配置 JRE 都选 **JDK 21**。
 2. 运行 `com.zz.agent.CarWorkOrderAgentApplication`。应用使用本机 `8091` 端口；访问 `http://localhost:8091/actuator/health`，应得到 `{"status":"UP"}`。
-3. 通用设置在 `src/main/resources/application.yml`；默认不创建 AI 模型。DeepSeek 接线在 `src/main/resources/application-deepseek.yml`，需要主动启用 `deepseek` Profile。注册后把 `config/application-deepseek.yml.example` 复制为被 Git 忽略的 `config/application-deepseek.yml`，只在该本地文件填写 Key；不要写入模板、提交或聊天。从项目根目录启动时，Spring Boot 会读取 `./config/`。具体检查和真实调用命令见[DeepSeek 接线记录](docs/verification/stage-0/deepseek-framework.md)。
+3. 通用设置在 `src/main/resources/application.yml`；默认不创建 AI 模型。DeepSeek 接线在 `src/main/resources/application-deepseek.yml`，需要主动启用 `deepseek` Profile。当前工作区的 `config/application-deepseek.yml` 已为你准备好；只在这个被 Git 忽略的 YAML 中把占位值换成自己的 Key，不用设置环境变量，也不要把 Key 写入模板、提交或聊天。其他机器克隆仓库后可从同目录的 `.example` 模板复制。从项目根目录启动时，Spring Boot 会读取 `./config/`。具体检查和真实调用命令见[DeepSeek 接线记录](docs/verification/stage-0/deepseek-framework.md)。
 
 Java 21 + Spring Boot 3.5.8 是当前**可启动骨架**的版本；pgvector 已有[隔离 SQL 探针](docs/verification/stage-0/pgvector-probe.md)，DeepSeek 只完成了本机模拟接口测试，真实模型、Java 向量检索、登录态与真实分配仍按阶段 0 记录逐项验证。
 

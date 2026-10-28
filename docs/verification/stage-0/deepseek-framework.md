@@ -12,6 +12,6 @@
 
 ## 真实调用待办
 
-注册 DeepSeek 后，在本机从 `config/application-deepseek.yml.example` 复制出被 Git 忽略的 `config/application-deepseek.yml`，填写 `spring.ai.openai.api-key`。不要把 Key 填进仓库文件、聊天或测试代码。随后用 JDK 21 在项目根目录**主动执行** `mvn -q -Dtest=DeepSeekLiveSmokeTest -Ddeepseek.live=true test`；该测试默认跳过，只在显式指定开关时发送一条模拟文本。记录实际响应模型、耗时、Token 用量和失败类别后，才能把真实调用标为通过。
+当前工作区的 `config/application-deepseek.yml` 已创建并被 Git 忽略；其他机器克隆后可从 `config/application-deepseek.yml.example` 复制。注册 DeepSeek 后，只需在这个 YAML 中把 `spring.ai.openai.api-key` 的占位值替换成自己的 Key；不用设置环境变量，也不要把 Key 填进受 Git 跟踪的文件、聊天或测试代码。随后用 JDK 21 在项目根目录**主动执行** `mvn -q -Dtest=DeepSeekLiveSmokeTest -Ddeepseek.live=true test`；该测试默认跳过，只在显式指定开关时发送一条模拟文本，并输出响应模型、耗时和 Token 用量。出现真实成功结果后，才能把真实调用标为通过。
 
 此接入只涵盖聊天模型。`spring.ai.model.embedding=none`，没有用 DeepSeek Key 生成向量；政策语义检索和 pgvector Java 连接仍待单独实现与验证。也不能从这一条模型调用推断工具调用、引用正确或工单 Agent 闭环完成。

@@ -5,7 +5,6 @@ spring:
       embedding: none
     openai:
       base-url: https://api.deepseek.com
-      api-key: ${DEEPSEEK_API_KEY}
       chat:
         completions-path: /chat/completions
         options:
