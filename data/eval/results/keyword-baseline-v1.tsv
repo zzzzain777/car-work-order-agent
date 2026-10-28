@@ -1,0 +1,11 @@
+# scope=draft-policy-retrieval-only
+# casesSha256=8a9f996e68b99b9936e2a892065f1db0666c36ed9a071a6250c2cc7a51f46750
+# corpusSha256=c86dc001bb57f7d347021a3075ce8b2cb5945f91471b669c80a38cd4de5c0ed4
+caseId	expectedStatus	actualStatus	expectedPolicyIds	actualPolicyIds	expectedSourceRefs	actualSourceRefs	rankedHits	pass
+C01	MATCHES	MATCHES	POL-STORE-A-MX-7-TEST	POL-STORE-A-MX-7-TEST	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	POL-STORE-A-MX-7-TEST@1#chunk-1:5	PASS
+C04	MATCHES	MATCHES	POL-STORE-A-MX-7-TEST	POL-STORE-A-MX-7-TEST	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	POL-STORE-A-MX-7-TEST@1#chunk-1:6	PASS
+C05	NO_APPLICABLE_POLICY	NO_APPLICABLE_POLICY	-	-	-	-	-	PASS
+C06	REVIEW_REQUIRED	REVIEW_REQUIRED	POL-STORE-E-MX-7-ALLOW|POL-STORE-E-MX-7-DENY	POL-STORE-E-MX-7-ALLOW|POL-STORE-E-MX-7-DENY	data/policies/STORE-E-MX-7-allow-v1.md#rule-1|data/policies/STORE-E-MX-7-deny-v1.md	data/policies/STORE-E-MX-7-allow-v1.md#rule-1|data/policies/STORE-E-MX-7-deny-v1.md	POL-STORE-E-MX-7-ALLOW@1#chunk-1:2|POL-STORE-E-MX-7-DENY@1#chunk-1:1	PASS
+C07	NO_APPLICABLE_POLICY	NO_APPLICABLE_POLICY	-	-	-	-	-	PASS
+# exactCasePass=5/5
+# recallAt2=3/3

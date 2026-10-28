@@ -11,3 +11,7 @@
 Java 21 + Spring Boot 3.5.8 是当前**可启动骨架**的版本；AI、PGvector、登录态与真实分配仍按阶段 0 记录逐项验证，不能视为已经完成。
 
 终端可用 JDK 21 运行 `mvn test` 或 `mvn spring-boot:run`；未安装全局 Maven 时，可在 IDEA 的 Maven 窗口运行相同目标。
+
+## 离线检索评测
+
+在 IDEA 运行 `PolicyRetrievalEvaluationTest`，会用固定模拟输入重放政策关键词检索，并把逐例结果写入 `target/eval/keyword-baseline-v1.tsv`。已保存的[草稿基线与口径](data/eval/results/README.md)用于核对后续变化；它不是完整 Agent 的评测结果。

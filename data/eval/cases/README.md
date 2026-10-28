@@ -2,7 +2,7 @@
 
 本目录存放**模拟工单**的人工标准答案。案例先写、先冻结，再用同一批输入比较规则流程、固定工具流程和受控模型工具选择；不要看完模型输出再改正确答案。
 
-Codex 已起草 [C01](C01-normal-test-drive.md)、[C02](C02-nearby-store-selection.md)、[C03](C03-missing-appointment-time.md)、[C04](C04-similar-model-code.md)、[C05](C05-expired-policy.md)、[C06](C06-conflicting-policies.md)、[C09](C09-advisor-tool-failure.md) 和相应模拟政策。它们均**尚未冻结或运行**。项目作者负责复核业务标准答案，并亲自设计后续 Java 代码架构与核心实现。
+Codex 已起草 [C01](C01-normal-test-drive.md)、[C02](C02-nearby-store-selection.md)、[C03](C03-missing-appointment-time.md)、[C04](C04-similar-model-code.md)、[C05](C05-expired-policy.md)、[C06](C06-conflicting-policies.md)、[C07](C07-no-applicable-policy.md)、[C09](C09-advisor-tool-failure.md) 和相应模拟政策。它们均**尚未由项目作者复核或冻结**。项目作者负责复核业务标准答案，并亲自设计后续 Java 代码架构与核心实现。C01/C04/C05/C06/C07 的政策检索部分已有单独的[草稿基线评测](../results/README.md)；这不表示对应的整条业务流程已经运行。
 
 每张卡都要固定 `asOf`（模拟当前时间）和 `appointmentAt`（计划试驾时间，缺失时明确写“缺失”）；政策适用区间按 `appointmentAt` 判断，不使用运行机器的当前时间。`asOf` 可以早于实际写卡日期，只要案例内的时间关系自洽。工单、顾问、客户及门店均使用虚构值，绝不粘贴真实接口返回体或凭据。
 

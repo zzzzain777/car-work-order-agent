@@ -1,0 +1,6 @@
+caseId	storeId	modelCode	appointmentAt	question	expectedStatus	expectedPolicyIds	expectedSourceRefs
+C01	STORE-A	MX-7	2026-11-07T14:00:00+08:00	试驾申请时间要求	MATCHES	POL-STORE-A-MX-7-TEST	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1
+C04	STORE-A	MX-7	2026-11-07T14:00:00+08:00	MX-7 试驾申请时间	MATCHES	POL-STORE-A-MX-7-TEST	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1
+C05	STORE-D	MX-7	2026-11-08T14:00:00+08:00	试驾申请时间	NO_APPLICABLE_POLICY	-	-
+C06	STORE-E	MX-7	2026-11-07T14:00:00+08:00	允许申请	REVIEW_REQUIRED	POL-STORE-E-MX-7-ALLOW|POL-STORE-E-MX-7-DENY	data/policies/STORE-E-MX-7-allow-v1.md#rule-1|data/policies/STORE-E-MX-7-deny-v1.md
+C07	STORE-C	MX-70	2026-11-07T14:00:00+08:00	MX-70 试驾规则	NO_APPLICABLE_POLICY	-	-
