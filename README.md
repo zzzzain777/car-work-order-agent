@@ -1,6 +1,6 @@
 # 汽车工单智能处置 Agent
 
-这是独立的 Java 21 / Spring Boot 项目。目前有可启动的应用骨架、健康检查、阶段 0 技术探针、基于模拟门店的纯 Java“最近五家”筛选、管理员确认前的纯规则判断，以及模拟政策原文的加载、校验和门店/车型/时效元数据筛选；政策正文检索、Embedding、完整状态机、业务工具、客户选店和真实分配尚未实现。[第一版设计](docs/superpowers/specs/2026-10-20-car-work-order-agent-design.md)和[阶段 0 决策](docs/verification/stage-0/decision.md)记录了边界与未通过的联调门槛。
+这是独立的 Java 21 / Spring Boot 项目。目前有可启动的应用骨架、健康检查、阶段 0 技术探针、基于模拟门店的纯 Java“最近五家”筛选、管理员确认前的纯规则判断，以及模拟政策原文的加载、校验、元数据筛选和离线关键词检索；Embedding/pgvector、完整状态机、业务工具、客户选店和真实分配尚未实现。[第一版设计](docs/superpowers/specs/2026-10-20-car-work-order-agent-design.md)和[阶段 0 决策](docs/verification/stage-0/decision.md)记录了边界与未通过的联调门槛。
 
 ## 在 IDEA 中运行
 
