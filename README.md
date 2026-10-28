@@ -8,7 +8,7 @@
 2. 运行 `com.zz.agent.CarWorkOrderAgentApplication`。应用使用本机 `8091` 端口；访问 `http://localhost:8091/actuator/health`，应得到 `{"status":"UP"}`。
 3. 通用设置在 `src/main/resources/application.yml`；默认不创建 AI 模型。DeepSeek 接线在 `src/main/resources/application-deepseek.yml`，需要主动启用 `deepseek` Profile。Key 只放在被 Git 忽略的 `config/application-deepseek.yml`，不用设置环境变量，也不要把 Key 写入模板、提交或聊天。其他机器克隆仓库后可从同目录的 `.example` 模板复制。从项目根目录启动时，Spring Boot 会读取 `./config/`。具体检查和真实调用命令见[DeepSeek 接线记录](docs/verification/stage-0/deepseek-framework.md)。
 
-Java 21 + Spring Boot 3.5.8 是当前**可启动骨架**的版本；pgvector 已有[隔离 SQL 探针](docs/verification/stage-0/pgvector-probe.md)，DeepSeek 的 `deepseek-flash` 已完成一次真实短文本联通测试；Java 向量检索、登录态与真实分配仍按阶段 0 记录逐项验证。
+Java 21 + Spring Boot 3.5.8 是当前**可启动骨架**的版本；pgvector 已有[隔离 SQL 探针](docs/verification/stage-0/pgvector-probe.md)和[无 Key 的 Java 接线探针](docs/verification/stage-1/java-pgvector-probe.md)，DeepSeek 的 `deepseek-flash` 已完成一次真实短文本联通测试；真实 Embedding、政策语义检索、登录态与真实分配仍待逐项验证。
 
 终端可用 JDK 21 运行 `mvn test` 或 `mvn spring-boot:run`；未安装全局 Maven 时，可在 IDEA 的 Maven 窗口运行相同目标。
 

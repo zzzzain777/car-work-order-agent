@@ -39,44 +39,40 @@
 - Consumes: `PolicySource`, `PolicyRuleChunker.split(PolicySource)`.
 - Produces: `List<Document> map(List<PolicySource> sources)`; each `Document` has a deterministic UUID ID and metadata keys `chunkId`, `policyId`, `version`, `sourceRef`, `storeId`, `modelCode`, `ruleType`, `status`, `simulated`, `effectiveFromEpoch`, `effectiveToEpoch`.
 
-- [ ] **Step 1: Write the failing test.** For an existing headed policy and a no-heading policy, assert one document per chunk, exact citation and metadata, and stable IDs across calls. Assert another version of the same policy yields another ID.
-- [ ] **Step 2: Run `PolicyVectorDocumentMapperTest`; expect failure because the mapper is absent.**
-- [ ] **Step 3: Implement `map(List<PolicySource>)` using `PolicyRuleChunker` and `UUID.nameUUIDFromBytes(chunkId.getBytes(UTF_8))`.** Keep the rule text as `Document` text; do not embed task or customer fields.
-- [ ] **Step 4: Rerun the focused test; expect pass.**
-- [ ] **Step 5: Commit the mapper and test.**
+- [x] **Step 1: Write the failing test.** For an existing headed policy and a no-heading policy, assert one document per chunk, exact citation and metadata, and stable IDs across calls. Assert another version of the same policy yields another ID.
+- [x] **Step 2: Run `PolicyVectorDocumentMapperTest`; expect failure because the mapper is absent.**
+- [x] **Step 3: Implement `map(List<PolicySource>)` using `PolicyRuleChunker` and `UUID.nameUUIDFromBytes(chunkId.getBytes(UTF_8))`.** Keep the rule text as `Document` text; do not embed task or customer fields.
+- [x] **Step 4: Rerun the focused test; expect pass.**
+- [x] **Step 5: Commit the mapper and test.**
 
 ### Task 2: Verify keyless Java pgvector wiring — Codex
 
 **Files:**
 - Modify: `pom.xml`
 - Create: `src/test/java/com/zz/agent/policy/PolicyPgVectorProbeTest.java`
+- Create: `probes/stage-1/java-pgvector-smoke.sh`
 - Create: `docs/verification/stage-1/java-pgvector-probe.md`
 
 **Interfaces:**
 - Consumes: `PolicyVectorDocumentMapper.map(List<PolicySource>)` and the Spring AI 1.1.2 `PgVectorStore` API.
 - Produces: an opt-in integration test using a temporary PostgreSQL/pgvector container and a deterministic 1024-dimensional test `EmbeddingModel`. This checks insert, exact search, metadata filter, and 1024-dimensional storage without a paid API call.
 
-- [ ] **Step 1: Add a focused opt-in test that fails at compile time without the PGvector/JDBC dependencies.** Assert a known document can be inserted and found with matching metadata, excluded with wrong model metadata, and stored at 1024 dimensions.
-- [ ] **Step 2: Run the focused test; confirm the expected missing-dependency failure.**
-- [ ] **Step 3: Add only the Spring AI PGvector library, Spring JDBC, and PostgreSQL driver needed for manual test wiring.** Do not enable vector-store beans during ordinary app startup.
-- [ ] **Step 4: Start an isolated temporary pgvector container; run the probe with its test-only connection URL.** Save the result and limitations in the verification record, then remove the container.
-- [ ] **Step 5: Run the full suite with no Key and no DB; expect all default tests to pass.**
-- [ ] **Step 6: Commit the probe, dependencies, and verification record.**
+- [x] **Step 1: Add a focused opt-in test that fails at compile time without the PGvector/JDBC dependencies.** Assert a known document can be inserted and found with matching metadata, excluded with wrong model metadata, and stored at 1024 dimensions.
+- [x] **Step 2: Run the focused test; confirm the expected missing-dependency failure.**
+- [x] **Step 3: Add only the Spring AI PGvector library, Spring JDBC, and PostgreSQL driver needed for manual test wiring.** Do not enable vector-store beans during ordinary app startup.
+- [x] **Step 4: Start an isolated temporary pgvector container; run the probe with its test-only connection URL.** Save the result and limitations in the verification record, then remove the container.
+- [x] **Step 5: Run the full suite with no Key and no DB; expect all default tests to pass.**
+- [x] **Step 6: Commit the probe, dependencies, and verification record.**
 
-### Task 3: Implement and evaluate retrieval policy — project author
+### Handoff: Implement and evaluate retrieval policy — project author
 
 **Files:**
 - Create: `src/main/java/com/zz/agent/policy/PolicySemanticSearch.java`
 - Test: `src/test/java/com/zz/agent/policy/PolicySemanticSearchTest.java`
 - Extend: `src/test/java/com/zz/agent/policy/PolicyRetrievalEvaluationTest.java`
 
-**Interfaces:**
-- Consumes: eligible `PolicySource` records from `PolicyMetadataFilter`, mapped `Document` records, and a `VectorStore` search adapter.
-- Produces: `find(List<PolicySource> policies, String storeId, String modelCode, OffsetDateTime appointmentAt, String question)`, returning status, ranked policy chunk IDs, and source references. The author chooses ranking and evidence sufficiency rules before implementing them.
+**Design ownership:** The author chooses the method signature, ranking, and evidence sufficiency rules. The implementation will consume eligible `PolicySource` records from `PolicyMetadataFilter`, mapped `Document` records, and a `VectorStore` search adapter; it will return status, ranked policy chunk IDs, and source references.
 
-- [ ] **Step 1: Fix expected behavior from H01–H08 and the old five cases before coding.** H01 must find the test-drive rule within top 2; H02 must not answer pricing from a test-drive rule; H03/H04/H08 exclude expired or wrong-model rules; H05 keeps both conflicting policies for human review.
-- [ ] **Step 2: Write failing focused tests for exact filtering, citation, and unsupported-question refusal.**
-- [ ] **Step 3: Implement the search decision logic and rerun the focused tests.**
-- [ ] **Step 4: Run the same fixed cases against keyword and vector candidates; save a new versioned result without overwriting the old 6/8 evidence.** Record model ID, dimension, corpus hash, case hash, rankings, citations, latency, and failure analysis.
+The author's next code task is to fix expected behavior from H01–H08 and the old five cases before coding. H01 must find the test-drive rule within top 2; H02 must not answer pricing from a test-drive rule; H03/H04/H08 exclude expired or wrong-model rules; H05 keeps both conflicting policies for human review. Then write focused failing tests for exact filtering, citation, and unsupported-question refusal, implement the search decision logic, and save a new versioned comparison without overwriting the old 6/8 evidence. Record model ID, dimension, corpus hash, case hash, rankings, citations, latency, and failure analysis.
 
 Real semantic quality is unverified until a real Embedding model is configured and called. The keyless Task 2 probe establishes only Java/database compatibility and metadata behavior.

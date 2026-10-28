@@ -1,6 +1,9 @@
 spring:
   application:
     name: car-work-order-agent
+  # Database auto-configuration stays off until the explicit RAG/task-store profile is ready.
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
   profiles:
     default: local
   ai:
