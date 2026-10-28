@@ -18,21 +18,36 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Replays the draft policy-only cases and keeps a reviewable baseline report. */
+/** Replays fixed policy-only cases and keeps reviewable reports, including failures. */
 class PolicyRetrievalEvaluationTest {
 
-    private static final Path CASES = Path.of("data/eval/retrieval/keyword-baseline-v1.tsv");
-    private static final Path OUTPUT = Path.of("target/eval/keyword-baseline-v1.tsv");
-    private static final Path SNAPSHOT = Path.of("data/eval/results/keyword-baseline-v1.tsv");
+    private static final Path POLICY_DIRECTORY = Path.of("data/policies");
 
     @Test
     void replayDraftCasesAndMatchTheSavedReport() throws Exception {
-        List<RetrievalCase> cases = readCases();
-        List<PolicySource> policies = new PolicySourceLoader().load(Path.of("data/policies"));
+        replay(Path.of("data/eval/retrieval/keyword-baseline-v1.tsv"),
+                Path.of("target/eval/keyword-baseline-v1.tsv"),
+                Path.of("data/eval/results/keyword-baseline-v1.tsv"),
+                "draft-policy-retrieval-only", true);
+    }
+
+    @Test
+    void replayHoldoutAndKeepFailuresInTheSavedReport() throws Exception {
+        replay(Path.of("data/eval/retrieval/keyword-holdout-v1.tsv"),
+                Path.of("target/eval/keyword-holdout-v1.tsv"),
+                Path.of("data/eval/results/keyword-holdout-v1.tsv"),
+                "holdout-policy-retrieval-only", false);
+    }
+
+    private static void replay(Path casesPath, Path outputPath, Path snapshotPath,
+                               String scope, boolean requireAllPass) throws Exception {
+        List<RetrievalCase> cases = readCases(casesPath);
+        assertTrue(!cases.isEmpty(), "评测输入不可为空：" + casesPath);
+        List<PolicySource> policies = new PolicySourceLoader().load(POLICY_DIRECTORY);
         PolicyKeywordSearch search = new PolicyKeywordSearch();
         StringBuilder report = new StringBuilder();
-        report.append("# scope=draft-policy-retrieval-only\n");
-        report.append("# casesSha256=").append(sha256(Files.readAllBytes(CASES))).append('\n');
+        report.append("# scope=").append(scope).append('\n');
+        report.append("# casesSha256=").append(sha256(Files.readAllBytes(casesPath))).append('\n');
         report.append("# corpusSha256=").append(corpusHash(policies)).append('\n');
         report.append("caseId\texpectedStatus\tactualStatus\texpectedPolicyIds\tactualPolicyIds")
                 .append("\texpectedSourceRefs\tactualSourceRefs\trankedHits\tpass\n");
@@ -73,15 +88,17 @@ class PolicyRetrievalEvaluationTest {
         report.append("# exactCasePass=").append(passed).append('/').append(cases.size()).append('\n');
         report.append("# recallAt2=").append(recallPassed).append('/').append(recallTotal).append('\n');
 
-        Files.createDirectories(OUTPUT.getParent());
-        Files.writeString(OUTPUT, report.toString(), StandardCharsets.UTF_8);
-        assertEquals(cases.size(), passed, "逐例结果见 " + OUTPUT);
-        assertTrue(Files.exists(SNAPSHOT), "请先人工检查 " + OUTPUT + "，再保存基线快照");
-        assertEquals(Files.readString(SNAPSHOT), report.toString(), "基线快照与本次运行结果不同");
+        Files.createDirectories(outputPath.getParent());
+        Files.writeString(outputPath, report.toString(), StandardCharsets.UTF_8);
+        if (requireAllPass) {
+            assertEquals(cases.size(), passed, "逐例结果见 " + outputPath);
+        }
+        assertTrue(Files.exists(snapshotPath), "请先核查 " + outputPath + "，再保存结果快照");
+        assertEquals(Files.readString(snapshotPath), report.toString(), "结果快照与本次运行结果不同");
     }
 
-    private static List<RetrievalCase> readCases() throws Exception {
-        List<String> lines = Files.readAllLines(CASES, StandardCharsets.UTF_8);
+    private static List<RetrievalCase> readCases(Path casesPath) throws Exception {
+        List<String> lines = Files.readAllLines(casesPath, StandardCharsets.UTF_8);
         assertEquals("caseId\tstoreId\tmodelCode\tappointmentAt\tquestion\texpectedStatus"
                 + "\texpectedPolicyIds\texpectedSourceRefs", lines.getFirst());
         List<RetrievalCase> cases = new ArrayList<>();

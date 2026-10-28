@@ -14,4 +14,4 @@ Java 21 + Spring Boot 3.5.8 是当前**可启动骨架**的版本；AI、PGvecto
 
 ## 离线检索评测
 
-在 IDEA 运行 `PolicyRetrievalEvaluationTest`，会用固定模拟输入重放政策关键词检索，并把逐例结果写入 `target/eval/keyword-baseline-v1.tsv`。已保存的[草稿基线与口径](data/eval/results/README.md)用于核对后续变化；它不是完整 Agent 的评测结果。
+在 IDEA 运行 `PolicyRetrievalEvaluationTest`，会用固定模拟输入重放政策关键词检索，并把逐例结果写入 `target/eval/`。[草稿基线、挑战集和逐例结果](data/eval/results/README.md)已保存；挑战集目前 6/8 完全符合预期，暴露了同义问法漏召回和无依据价格问题误命中。它不是完整 Agent 的评测结果。
