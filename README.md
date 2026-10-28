@@ -15,3 +15,7 @@ Java 21 + Spring Boot 3.5.8 是当前**可启动骨架**的版本；pgvector 已
 ## 离线检索评测
 
 在 IDEA 运行 `PolicyRetrievalEvaluationTest`，会用固定模拟输入重放政策关键词检索，并把逐例结果写入 `target/eval/`。[草稿基线、挑战集和逐例结果](data/eval/results/README.md)已保存；挑战集目前 6/8 完全符合预期，暴露了同义问法漏召回和无依据价格问题误命中。它不是完整 Agent 的评测结果。
+
+## 参考项目取舍
+
+鱼皮公开的 `yu-ai-agent` 适合作为 Spring AI 与 RAG 的学习材料；本项目不会照搬其通用 ReAct Agent。具体借鉴和不采用的理由见[模板适配评审](docs/verification/yu-ai-agent-template-review.md)。
