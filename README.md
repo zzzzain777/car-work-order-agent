@@ -18,4 +18,4 @@ Java 21 + Spring Boot 3.5.8 是当前**可启动骨架**的版本；pgvector 已
 
 ## 参考项目取舍
 
-鱼皮公开的 `yu-ai-agent` 适合作为 Spring AI 与 RAG 的学习材料；本项目不会照搬其通用 ReAct Agent。具体借鉴和不采用的理由见[模板适配评审](docs/verification/yu-ai-agent-template-review.md)。
+此前对 Spring AI Alibaba、LangGraph、Dify、Langfuse 的架构调研及本项目的实施顺序见[高 Star Agent 架构借鉴](docs/verification/high-star-agent-architecture-review.md)。鱼皮公开的 `yu-ai-agent` 适合作为 Spring AI 与 RAG 的学习材料；其具体取舍另见[模板适配评审](docs/verification/yu-ai-agent-template-review.md)。
