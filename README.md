@@ -8,7 +8,7 @@
 2. 运行 `com.zz.agent.CarWorkOrderAgentApplication`。应用使用本机 `8091` 端口；访问 `http://localhost:8091/actuator/health`，应得到 `{"status":"UP"}`。
 3. 通用设置在 `src/main/resources/application.yml`。仅本机使用的 `config/application-local.yml` 被 Git 忽略，初始内容来自同目录 `.example` 模板；从项目根目录启动时，Spring Boot 会读取 `./config/`。将来需要调用模型时，由你在本地文件中填写 Key；不要写入模板、提交或聊天。这个外部文件不会被 Maven 打进 JAR。当前应用没有加入 AI/数据库自动配置依赖，因此填写 Key 本身不会启动真实模型调用。
 
-Java 21 + Spring Boot 3.5.8 是当前**可启动骨架**的版本；AI、PGvector、登录态与真实分配仍按阶段 0 记录逐项验证，不能视为已经完成。
+Java 21 + Spring Boot 3.5.8 是当前**可启动骨架**的版本；pgvector 已有[隔离 SQL 探针](docs/verification/stage-0/pgvector-probe.md)，AI、Java 向量检索、登录态与真实分配仍按阶段 0 记录逐项验证，不能视为已经完成。
 
 终端可用 JDK 21 运行 `mvn test` 或 `mvn spring-boot:run`；未安装全局 Maven 时，可在 IDEA 的 Maven 窗口运行相同目标。
 
