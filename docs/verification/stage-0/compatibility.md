@@ -23,4 +23,4 @@
 
 ## 未完成的真实调用
 
-当前没有可用的 DashScope API Key；未调用千问或 `text-embedding-v4`，没有模型 ID、地域、耗时或 1024 维实测结果。已准备[本地 YAML 模板](../../../config/application-local.yml.example)，其属性路径参照 [Spring AI Alibaba 官方示例](https://github.com/spring-ai-alibaba/website/blob/main/agents-docs/dataagent/quick-start.md)；真实 Key 由用户稍后填入 Git 忽略的 `config/application-local.yml`，不进入仓库或日志。此模板不是已运行的 Agent 配置，应用创建后仍需验证 `local` Profile 的实际加载。PostgreSQL + pgvector 实例也未连接。上述两项均标为**尚未验证**，阶段 0 的 Go/No-Go 决定必须保留它们。
+当前没有可用的 DashScope API Key；未调用千问或 `text-embedding-v4`，没有模型 ID、地域、耗时或 1024 维实测结果。已准备[本地 YAML 模板](../../../config/application-local.yml.example)，其属性路径参照 [Spring AI Alibaba 官方示例](https://github.com/spring-ai-alibaba/website/blob/main/agents-docs/dataagent/quick-start.md)；真实 Key 由用户稍后填入 Git 忽略的外部配置 `config/application-local.yml`，不进入仓库、JAR 或日志。应用骨架可启动，但尚未加入 AI 自动配置依赖；模板中的模型配置未做真实调用验证。PostgreSQL + pgvector 实例也未连接。上述两项均标为**尚未验证**，阶段 0 的 Go/No-Go 决定必须保留它们。

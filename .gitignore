@@ -1,1 +1,5 @@
 /config/application-local.yml
+/src/main/resources/application-local.yml
+/target/
+/.idea/
+*.iml

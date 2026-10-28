@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: car-work-order-agent
+  profiles:
+    default: local
+
+server:
+  port: 8091
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

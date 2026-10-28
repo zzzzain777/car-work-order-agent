@@ -4,7 +4,7 @@
 
 | 门槛 | 状态 | 证据与下一动作 |
 |---|---|---|
-| Java 21 + Maven | 通过（隔离容器） | [工具链实测](toolchain.md)：Temurin 21.0.7 / Maven 3.9.9；主机仍为 Java 8，无需改 `carSystem` 环境 |
+| Java 21 + Maven | 通过（隔离容器及主机） | [工具链实测](toolchain.md)：主机已安装 Corretto 21.0.12.1，IDEA 自带 Maven 3.9.9 与应用骨架测试通过；原有 Java 8 保留 |
 | `carSystem` 接口 | 源码已核对；登录正反例部分运行通过 | [契约记录](car-system-contract.md)：5 条拟调用接口的路径、权限、字段与业务码；源码仓库有未提交修改，编码前再核对 |
 | Session / 实时管理员权限 | **失败** | [联调矩阵](session-matrix.md)：测试管理员降级或封禁后，旧 Session 仍被 `/current` 和管理员接口放行。当前方案不能安全开放真实分配 |
 | 同源代理、Agent Cookie 路径、CSRF | 尚未验证 | 需运行隔离代理与无业务副作用的写入探针，覆盖同源、Token、跨站和退出后请求；在此之前保持写入关闭 |
