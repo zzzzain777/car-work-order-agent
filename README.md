@@ -10,6 +10,8 @@
 
 Java 21 + Spring Boot 3.5.8 是当前**可启动骨架**的版本；pgvector 已有[隔离 SQL 探针](docs/verification/stage-0/pgvector-probe.md)和[无 Key 的 Java 接线探针](docs/verification/stage-1/java-pgvector-probe.md)，DeepSeek 的 `deepseek-flash` 已完成一次真实短文本联通测试；真实 Embedding、政策语义检索、登录态与真实分配仍待逐项验证。
 
+政策检索新增了[候选证据判断](docs/verification/stage-1/policy-evidence-gate.md)：价格、实时车源等问题不会拿模拟试驾政策作依据；同范围多份政策交人工。它只检查候选片段，不代表已经完成真实语义检索或答案事实核验。
+
 终端可用 JDK 21 运行 `mvn test` 或 `mvn spring-boot:run`；未安装全局 Maven 时，可在 IDEA 的 Maven 窗口运行相同目标。
 
 ## 离线检索评测

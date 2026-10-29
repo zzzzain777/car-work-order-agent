@@ -13,6 +13,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import java.nio.file.Path;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,8 +39,8 @@ class PolicyPgVectorProbeTest {
                 .build();
         store.afterPropertiesSet();
 
-        List<Document> documents = new PolicyVectorDocumentMapper().map(
-                new PolicySourceLoader().load(Path.of("data/policies")));
+        List<PolicySource> policies = new PolicySourceLoader().load(Path.of("data/policies"));
+        List<Document> documents = new PolicyVectorDocumentMapper().map(policies);
         store.add(documents);
         Document expected = documents.stream()
                 .filter(document -> "POL-STORE-A-MX-7-TEST".equals(document.getMetadata().get("policyId")))
@@ -52,6 +53,12 @@ class PolicyPgVectorProbeTest {
         assertTrue(matching.stream().anyMatch(document -> document.getId().equals(expected.getId())));
         assertEquals("data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1",
                 matching.getFirst().getMetadata().get("sourceRef"));
+        PolicyEvidenceGate.Decision evidence = new PolicyEvidenceGate().evaluate(policies,
+                "STORE-A", "MX-7", OffsetDateTime.parse("2026-11-07T14:00:00+08:00"),
+                "下午两点能去试车吗", matching);
+        assertEquals(PolicyEvidenceGate.Outcome.CANDIDATES, evidence.outcome());
+        assertEquals("data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1",
+                evidence.evidence().getFirst().sourceRef());
 
         List<Document> wrongModel = store.similaritySearch(SearchRequest.builder()
                 .query(expected.getText()).topK(2)
