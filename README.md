@@ -8,7 +8,9 @@
 2. 运行 `com.zz.agent.CarWorkOrderAgentApplication`。应用使用本机 `8091` 端口；访问 `http://localhost:8091/actuator/health`，应得到 `{"status":"UP"}`。
 3. 通用设置在 `src/main/resources/application.yml`；默认不创建 AI 模型。DeepSeek 接线在 `src/main/resources/application-deepseek.yml`，需要主动启用 `deepseek` Profile。Key 只放在被 Git 忽略的 `config/application-deepseek.yml`，不用设置环境变量，也不要把 Key 写入模板、提交或聊天。其他机器克隆仓库后可从同目录的 `.example` 模板复制。从项目根目录启动时，Spring Boot 会读取 `./config/`。具体检查和真实调用命令见[DeepSeek 接线记录](docs/verification/stage-0/deepseek-framework.md)。
 
-Java 21 + Spring Boot 3.5.8 是当前**可启动骨架**的版本；pgvector 已有[隔离 SQL 探针](docs/verification/stage-0/pgvector-probe.md)和[无 Key 的 Java 接线探针](docs/verification/stage-1/java-pgvector-probe.md)，DeepSeek 的 `deepseek-flash` 已完成一次真实短文本联通测试；真实 Embedding、政策语义检索、登录态与真实分配仍待逐项验证。
+4. 百炼 Embedding 单独使用 `bailian-embedding` Profile：模型为 `qwen3.7-text-embedding-flash`，默认输出 1024 维。业务空间 Base URL 和 Key 只写在被 Git 忽略的 `config/application-bailian-embedding.yml`，公开模板见同名 `.example`。启用后可用 `BailianEmbeddingLiveSmokeTest` 做一次模拟短文本联通，默认测试集不会发出真实请求。该模型在本账号的免费额度页面显示 2026-11-30 到期；免费额度用完即停已开启。过期后需重新核对额度，不能把当前免费状态视为永久免费。接线和实测边界见[百炼 Embedding 记录](docs/verification/stage-1/bailian-embedding.md)。
+
+Java 21 + Spring Boot 3.5.8 是当前**可启动骨架**的版本；pgvector 已有[隔离 SQL 探针](docs/verification/stage-0/pgvector-probe.md)和[无 Key 的 Java 接线探针](docs/verification/stage-1/java-pgvector-probe.md)。DeepSeek 的 `deepseek-flash` 和百炼的 `qwen3.7-text-embedding-flash` 各完成了一次真实短文本联通；政策语义检索、登录态与真实分配仍待逐项验证。
 
 政策检索新增了[候选证据判断](docs/verification/stage-1/policy-evidence-gate.md)：价格、实时车源等问题不会拿模拟试驾政策作依据；同范围多份政策交人工。它只检查候选片段，不代表已经完成真实语义检索或答案事实核验。
 

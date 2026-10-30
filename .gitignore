@@ -1,5 +1,6 @@
 /config/application-local.yml
 /config/application-deepseek.yml
+/config/application-bailian-embedding.yml
 /src/main/resources/application-local.yml
 /target/
 /.idea/

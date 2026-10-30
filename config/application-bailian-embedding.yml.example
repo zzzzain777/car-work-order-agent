@@ -1,0 +1,8 @@
+# 复制为 config/application-bailian-embedding.yml，再填写百炼 API Key 和业务空间地址。
+# 实际文件已被 Git 忽略；不要把 Key 提交到 GitHub。
+spring:
+  ai:
+    openai:
+      embedding:
+        base-url: https://YOUR_WORKSPACE_ID.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
+        api-key: REPLACE_WITH_BAILIAN_KEY
