@@ -31,6 +31,6 @@ class BailianEmbeddingLiveSmokeTest {
         float[] vector = embeddingModel.embed("模拟政策：MX7 试驾需提前预约");
         long elapsedMs = (System.nanoTime() - startedAt) / 1_000_000;
         assertEquals(1024, vector.length);
-        System.out.printf("Bailian embedding smoke: dimensions=%d, elapsedMs=%d%n", vector.length, elapsedMs);
+        System.out.printf("百炼向量联通测试：维度=%d，耗时毫秒=%d%n", vector.length, elapsedMs);
     }
 }

@@ -33,9 +33,9 @@ class DeepSeekLiveSmokeTest {
         long elapsedMs = (System.nanoTime() - startedAt) / 1_000_000;
         assertNotNull(response.getResult());
         assertFalse(response.getResult().getOutput().getText().isBlank());
-        System.out.printf("DeepSeek smoke: model=%s, elapsedMs=%d, promptTokens=%s, completionTokens=%s%n",
+        System.out.printf("DeepSeek 联通测试：模型=%s，耗时毫秒=%d，输入令牌=%s，输出令牌=%s%n",
                 response.getMetadata().getModel(), elapsedMs,
-                response.getMetadata().getUsage() == null ? "unknown" : response.getMetadata().getUsage().getPromptTokens(),
-                response.getMetadata().getUsage() == null ? "unknown" : response.getMetadata().getUsage().getCompletionTokens());
+                response.getMetadata().getUsage() == null ? "未知" : response.getMetadata().getUsage().getPromptTokens(),
+                response.getMetadata().getUsage() == null ? "未知" : response.getMetadata().getUsage().getCompletionTokens());
     }
 }
