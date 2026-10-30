@@ -1,0 +1,10 @@
+案例	预期结果	实际结果	预期政策	实际政策	预期出处	实际出处	通过
+H01	CANDIDATES	CANDIDATES	POL-STORE-A-MX-7-TEST	POL-STORE-A-MX-7-TEST	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	通过
+H02	NO_EVIDENCE	NO_EVIDENCE	-	-	-	-	通过
+H03	NO_APPLICABLE_POLICY	NO_APPLICABLE_POLICY	-	-	-	-	通过
+H04	NO_APPLICABLE_POLICY	NO_APPLICABLE_POLICY	-	-	-	-	通过
+H05	REVIEW_REQUIRED	REVIEW_REQUIRED	POL-STORE-E-MX-7-ALLOW|POL-STORE-E-MX-7-DENY	POL-STORE-E-MX-7-ALLOW|POL-STORE-E-MX-7-DENY	data/policies/STORE-E-MX-7-allow-v1.md#rule-1|data/policies/STORE-E-MX-7-deny-v1.md	data/policies/STORE-E-MX-7-allow-v1.md#rule-1|data/policies/STORE-E-MX-7-deny-v1.md	通过
+H06	CANDIDATES	CANDIDATES	POL-STORE-A-MX-70-TEST	POL-STORE-A-MX-70-TEST	data/policies/STORE-A-MX-70-test-drive-v1.md#rule-1	data/policies/STORE-A-MX-70-test-drive-v1.md#rule-1	通过
+H07	CANDIDATES	CANDIDATES	POL-STORE-D-MX-7-TEST	POL-STORE-D-MX-7-TEST	data/policies/STORE-D-MX-7-expired-v1.md#rule-1	data/policies/STORE-D-MX-7-expired-v1.md#rule-1	通过
+H08	NO_APPLICABLE_POLICY	NO_APPLICABLE_POLICY	-	-	-	-	通过
+# 逐例通过=8/8

@@ -14,9 +14,9 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * Conservative guard for the current simulated test-drive corpus.
- * CANDIDATES means only that traceable policy chunks may be shown to a later answer step;
- * it does not prove a generated answer or a real booking claim.
+ * 对当前模拟试驾政策语料执行保守的证据检查。
+ * CANDIDATES 仅表示找到可追溯的政策片段，可交给后续回答步骤核对；
+ * 它不代表已生成可信答案，也不代表真实预约成功。
  */
 public final class PolicyEvidenceGate {
 
@@ -50,8 +50,8 @@ public final class PolicyEvidenceGate {
 
     public Decision evaluate(List<PolicySource> policies, String storeId, String modelCode,
                              OffsetDateTime appointmentAt, String question, List<Document> retrieved) {
-        Objects.requireNonNull(question, "question");
-        Objects.requireNonNull(retrieved, "retrieved");
+        Objects.requireNonNull(question, "问题不能为空");
+        Objects.requireNonNull(retrieved, "检索结果不能为空");
         PolicyMetadataFilter.Result applicable =
                 metadataFilter.find(policies, storeId, modelCode, appointmentAt);
         if (applicable.outcome() == PolicyMetadataFilter.Outcome.NO_MATCH) {

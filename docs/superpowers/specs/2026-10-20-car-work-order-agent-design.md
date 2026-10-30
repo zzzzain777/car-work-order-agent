@@ -23,7 +23,7 @@
 - 本仓库 [AGENTS.md](../../../AGENTS.md) 定义目标、权限和用户亲自实现的边界。
 - 本地 `carSystem` 源码只读核对位置：`/Users/zz/carProject`，核对时的提交为 `a5fd78c`，工作区当时有未提交修改；因此编码及联调前必须重新核对接口。
 - Spring AI Alibaba `1.1.2.2` 的官方 POM 将 Spring AI `1.1.2`、Spring Boot `3.5.8` 放在同一依赖组合中；它是候选基线，仍需本项目最小启动与调用验证：[官方 POM](https://github.com/alibaba/spring-ai-alibaba/blob/main/pom.xml)、[发布记录](https://github.com/alibaba/spring-ai-alibaba/releases)。Java 21 在 [Spring Boot 3.5 支持范围](https://docs.spring.io/spring-boot/3.5/system-requirements.html)内。
-- 百炼文档列出 `text-embedding-v4` 的 1024 维选项；第一版固定模型和维度，并在改变后重建向量：[百炼 Embedding 规格](https://help.aliyun.com/zh/model-studio/embedding-rerank-model)。生成模型候选为千问 Plus；评测时记录实际模型 ID、参数和服务地域，不用会动态更新的 `latest` 作为唯一版本标识：[千问 Plus 说明](https://help.aliyun.com/zh/model-studio/qwen-plus)。
+- 第一阶段实际接入的百炼向量模型是 `qwen3.7-text-embedding-flash`，输出 1024 维；模型或维度改变时重建向量。最初方案讨论过 `text-embedding-v4`，以联调记录的实际模型为准：[百炼 Embedding 规格](https://help.aliyun.com/zh/model-studio/embedding-rerank-model)。生成模型候选为千问 Plus；评测时记录实际模型 ID、参数和服务地域，不用会动态更新的 `latest` 作为唯一版本标识：[千问 Plus 说明](https://help.aliyun.com/zh/model-studio/qwen-plus)。
 - 2026-10-22 设计复核参考[《AI Agent 的开发流程是啥？》视频](https://www.douyin.com/video/7699063875946708672)的页面章节要点：场景判断、能力拆解、评估先行、原型快跑、评估迭代、工程化上线。它提供复核顺序，不是本项目效果或技术选型的证据；本节的去留门槛是针对当前工单场景的设计判断。
 - 2026-10-28 对照鱼皮公开的 `yu-ai-agent` 后，保留“学习 Spring AI 的文档处理、检索与工具调用接口”的方向，不把通用 ReAct 循环作为工单执行框架；逐项理由见[模板适配评审](../../verification/yu-ai-agent-template-review.md)。
 

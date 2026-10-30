@@ -56,7 +56,7 @@ class PolicySourceLoaderTest {
         Files.writeString(directory.resolve("invalid.md"), source.replace("isSimulated: true", "isSimulated: false"));
 
         IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> loader.load(directory));
-        assertTrue(error.getMessage().contains("simulated"));
+        assertTrue(error.getMessage().contains("模拟资料"));
     }
 
     @Test
@@ -66,7 +66,7 @@ class PolicySourceLoaderTest {
                 source.replace("2026-12-01T00:00:00+08:00", "2026-10-01T00:00:00+08:00"));
 
         IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> loader.load(directory));
-        assertTrue(error.getMessage().contains("effective period"));
+        assertTrue(error.getMessage().contains("生效时间范围"));
     }
 
     @Test
@@ -78,7 +78,7 @@ class PolicySourceLoaderTest {
                 source.replace("STORE-A-MX-7-test-drive-v1.md", "second.md"));
 
         IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> loader.load(directory));
-        assertTrue(error.getMessage().contains("Duplicate policy version"));
+        assertTrue(error.getMessage().contains("政策编号与版本重复"));
     }
 
     @Test
@@ -87,6 +87,6 @@ class PolicySourceLoaderTest {
         Files.writeString(directory.resolve("wrong.md"), source);
 
         IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> loader.load(directory));
-        assertTrue(error.getMessage().contains("sourceRef"));
+        assertTrue(error.getMessage().contains("来源引用"));
     }
 }

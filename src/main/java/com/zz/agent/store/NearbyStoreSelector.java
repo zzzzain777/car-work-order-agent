@@ -9,8 +9,8 @@ public class NearbyStoreSelector {
     private static final double EARTH_RADIUS_KM = 6371.0088;
 
     public List<NearbyStore> findNearestFive(GeoPoint customer, List<Store> stores) {
-        Objects.requireNonNull(customer, "customer");
-        Objects.requireNonNull(stores, "stores");
+        Objects.requireNonNull(customer, "客户位置不能为空");
+        Objects.requireNonNull(stores, "门店列表不能为空");
 
         return stores.stream()
                 .filter(Store::open)

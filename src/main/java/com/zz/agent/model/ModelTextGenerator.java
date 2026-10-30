@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Objects;
 
-/** Internal model entry point; callers retain the response metadata for later audit. */
+/** 模型调用入口；调用方保留响应元数据供后续审计。 */
 @Component
 @Profile("deepseek")
 public final class ModelTextGenerator {
@@ -20,9 +20,9 @@ public final class ModelTextGenerator {
 
     public ChatResponse generate(String prompt) {
         if (prompt == null || prompt.isBlank()) {
-            throw new IllegalArgumentException("prompt must not be blank");
+            throw new IllegalArgumentException("提示词不能为空");
         }
         return Objects.requireNonNull(chatClient.prompt().user(prompt).call().chatResponse(),
-                "model returned no response");
+                "模型没有返回响应");
     }
 }

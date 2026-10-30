@@ -13,17 +13,53 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import java.nio.file.Path;
+import java.nio.file.Files;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Opt-in database probe; the test embedding is deterministic and has no semantic quality claim. */
+/** 可选的数据库探针；测试向量可重复生成，不用于证明语义检索质量。 */
 @EnabledIfEnvironmentVariable(named = "AGENT_PGVECTOR_PROBE", matches = "true")
 class PolicyPgVectorProbeTest {
+
+    @Test
+    void repeatedIndexingSkipsUnchangedPoliciesAndRemovesStaleChunks(@org.junit.jupiter.api.io.TempDir Path temp)
+            throws Exception {
+        Files.copy(Path.of("data/policies/STORE-A-MX-7-test-drive-v1.md"),
+                temp.resolve("STORE-A-MX-7-test-drive-v1.md"));
+        Files.copy(Path.of("data/policies/STORE-A-MX-70-test-drive-v1.md"),
+                temp.resolve("STORE-A-MX-70-test-drive-v1.md"));
+        DriverManagerDataSource dataSource = new DriverManagerDataSource(
+                System.getenv("AGENT_PGVECTOR_JDBC_URL"),
+                System.getenv("AGENT_PGVECTOR_USER"),
+                System.getenv("AGENT_PGVECTOR_PASSWORD"));
+        JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+        ProbeEmbeddingModel model = new ProbeEmbeddingModel();
+        PgVectorStore store = PgVectorStore.builder(jdbc, model)
+                .dimensions(1024)
+                .indexType(PgVectorStore.PgIndexType.NONE)
+                .vectorTableName("policy_vector_store")
+                .initializeSchema(true)
+                .build();
+        store.afterPropertiesSet();
+        PolicyIndexService index = new PolicyIndexService(store, jdbc, temp, "probe-embedding-1024");
+
+        assertTrue(index.refresh().changed());
+        assertEquals(2, jdbc.queryForObject("SELECT count(*) FROM policy_vector_store", Integer.class));
+        int firstEmbeddings = model.embeddingCalls.get();
+        assertTrue(firstEmbeddings > 0);
+        assertTrue(!index.refresh().changed());
+        assertEquals(firstEmbeddings, model.embeddingCalls.get());
+
+        Files.delete(temp.resolve("STORE-A-MX-70-test-drive-v1.md"));
+        assertTrue(index.refresh().changed());
+        assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM policy_vector_store", Integer.class));
+    }
 
     @Test
     void storesDocumentsAndAppliesMetadataFiltersWithJava() throws Exception {
@@ -73,8 +109,11 @@ class PolicyPgVectorProbeTest {
     }
 
     private static final class ProbeEmbeddingModel extends AbstractEmbeddingModel {
+        private final AtomicInteger embeddingCalls = new AtomicInteger();
+
         @Override
         public EmbeddingResponse call(EmbeddingRequest request) {
+            embeddingCalls.incrementAndGet();
             List<Embedding> results = new ArrayList<>();
             for (int i = 0; i < request.getInstructions().size(); i++) {
                 results.add(new Embedding(vector(request.getInstructions().get(i)), i));

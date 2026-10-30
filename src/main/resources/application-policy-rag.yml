@@ -1,0 +1,9 @@
+# 仅在显式启用 policy-rag 配置组时开放本机的模拟政策只读检索。
+# 数据库密码放在 Git 忽略的 ./config/application-policy-rag.yml。
+server:
+  address: 127.0.0.1
+
+agent:
+  rag:
+    policy-directory: data/policies
+    embedding-model-id: qwen3.7-text-embedding-flash

@@ -11,13 +11,13 @@ import java.util.UUID;
 
 import static java.util.Map.entry;
 
-/** Converts versioned simulated policy rules into traceable vector documents. */
+/** 将带版本的模拟政策规则转成可追溯的向量文档。 */
 public final class PolicyVectorDocumentMapper {
 
     private final PolicyRuleChunker chunker = new PolicyRuleChunker();
 
     public List<Document> map(List<PolicySource> sources) {
-        Objects.requireNonNull(sources, "sources");
+        Objects.requireNonNull(sources, "政策来源不能为空");
         List<Document> documents = new ArrayList<>();
         for (PolicySource source : sources) {
             for (PolicyRuleChunker.Chunk chunk : chunker.split(source)) {

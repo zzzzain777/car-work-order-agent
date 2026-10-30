@@ -24,7 +24,7 @@ public class PolicySourceLoader {
             Pattern.compile("\\A---\\R(.*?)\\R---(?:\\R|\\z)", Pattern.DOTALL);
 
     public List<PolicySource> load(Path directory) throws IOException {
-        Objects.requireNonNull(directory, "directory");
+        Objects.requireNonNull(directory, "政策目录不能为空");
         List<Path> files;
         try (var paths = Files.list(directory)) {
             files = paths.filter(Files::isRegularFile)
@@ -41,7 +41,7 @@ public class PolicySourceLoader {
             PolicySource source = parse(file);
             if (!seenVersions.add(new PolicyKey(source.policyId(), source.version()))) {
                 throw new IllegalArgumentException(
-                        "Duplicate policy version: " + source.policyId() + "@" + source.version());
+                        "政策编号与版本重复：" + source.policyId() + "@" + source.version());
             }
             sources.add(source);
         }
@@ -52,34 +52,34 @@ public class PolicySourceLoader {
         String text = Files.readString(file, StandardCharsets.UTF_8);
         Matcher frontMatter = FRONT_MATTER.matcher(text);
         if (!frontMatter.find()) {
-            throw new IllegalArgumentException("Policy is missing YAML front matter: " + file);
+            throw new IllegalArgumentException("政策文件缺少 YAML 元数据：" + file);
         }
 
         LoaderOptions options = new LoaderOptions();
         options.setAllowDuplicateKeys(false);
         Object parsed = new Yaml(new SafeConstructor(options)).load(frontMatter.group(1));
         if (!(parsed instanceof Map<?, ?> metadata)) {
-            throw new IllegalArgumentException("Policy metadata must be a mapping: " + file);
+            throw new IllegalArgumentException("政策元数据必须是键值映射：" + file);
         }
 
         if (!Boolean.TRUE.equals(metadata.get("isSimulated"))) {
-            throw new IllegalArgumentException("Policy must be explicitly marked simulated: " + file);
+            throw new IllegalArgumentException("政策必须明确标记为模拟资料：" + file);
         }
         int version = requiredVersion(metadata, file);
         OffsetDateTime effectiveFrom = OffsetDateTime.parse(requiredString(metadata, "effectiveFrom", file));
         OffsetDateTime effectiveTo = OffsetDateTime.parse(requiredString(metadata, "effectiveTo", file));
         if (!effectiveFrom.toInstant().isBefore(effectiveTo.toInstant())) {
-            throw new IllegalArgumentException("Policy effective period is empty or reversed: " + file);
+            throw new IllegalArgumentException("政策生效时间范围为空或前后颠倒：" + file);
         }
 
         String body = text.substring(frontMatter.end());
         if (body.isBlank()) {
-            throw new IllegalArgumentException("Policy body is empty: " + file);
+            throw new IllegalArgumentException("政策正文为空：" + file);
         }
         String sourceRef = requiredString(metadata, "sourceRef", file);
         String expectedRef = "data/policies/" + file.getFileName();
         if (!sourceRef.equals(expectedRef) && !sourceRef.startsWith(expectedRef + "#")) {
-            throw new IllegalArgumentException("Policy sourceRef points to another file: " + file);
+            throw new IllegalArgumentException("政策来源引用指向其他文件：" + file);
         }
 
         return new PolicySource(
@@ -101,7 +101,7 @@ public class PolicySourceLoader {
     private static int requiredVersion(Map<?, ?> metadata, Path file) {
         Object value = metadata.get("version");
         if (!(value instanceof Integer version) || version < 1) {
-            throw new IllegalArgumentException("Policy version must be a positive integer: " + file);
+            throw new IllegalArgumentException("政策版本必须是正整数：" + file);
         }
         return version;
     }
@@ -109,7 +109,7 @@ public class PolicySourceLoader {
     private static String requiredString(Map<?, ?> metadata, String key, Path file) {
         Object value = metadata.get(key);
         if (!(value instanceof String text) || text.isBlank()) {
-            throw new IllegalArgumentException("Policy is missing " + key + ": " + file);
+            throw new IllegalArgumentException("政策缺少字段 " + key + "：" + file);
         }
         return text;
     }

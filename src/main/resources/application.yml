@@ -1,7 +1,7 @@
 spring:
   application:
     name: car-work-order-agent
-  # Database auto-configuration stays off until the explicit RAG/task-store profile is ready.
+  # 默认不创建数据库连接；只有主动启用政策检索配置时才连接本地数据库。
   autoconfigure:
     exclude: org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
   profiles:

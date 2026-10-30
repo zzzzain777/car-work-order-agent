@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-/** Checks our DeepSeek wiring through a local HTTP server; it never uses a real API key. */
+/** 通过本地 HTTP 服务检查 DeepSeek 接线，不使用真实密钥。 */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ActiveProfiles("deepseek")
 class DeepSeekFrameworkIntegrationTest {

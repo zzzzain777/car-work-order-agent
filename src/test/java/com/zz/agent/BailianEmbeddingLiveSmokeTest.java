@@ -11,7 +11,7 @@ import org.springframework.test.context.ActiveProfiles;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-/** One opt-in request using simulated policy text; never runs in the normal test suite. */
+/** 可选的一次模拟政策文本请求；普通测试集不会运行。 */
 @EnabledIfSystemProperty(named = "bailian.embedding.live", matches = "true")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ActiveProfiles("bailian-embedding")

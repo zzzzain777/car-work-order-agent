@@ -1,6 +1,8 @@
 /config/application-local.yml
 /config/application-deepseek.yml
 /config/application-bailian-embedding.yml
+/config/application-policy-rag.yml
+/config/policy-rag-db.env
 /src/main/resources/application-local.yml
 /target/
 /.idea/

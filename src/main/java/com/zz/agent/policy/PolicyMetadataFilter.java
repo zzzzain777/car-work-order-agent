@@ -5,7 +5,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 
-/** Filters policy sources by trusted, structured task fields only. */
+/** 只用可信的结构化任务字段筛选政策适用范围。 */
 public final class PolicyMetadataFilter {
 
     public enum Outcome {
@@ -26,10 +26,10 @@ public final class PolicyMetadataFilter {
             String modelCode,
             OffsetDateTime appointmentAt
     ) {
-        Objects.requireNonNull(policies, "policies");
-        Objects.requireNonNull(storeId, "storeId");
-        Objects.requireNonNull(modelCode, "modelCode");
-        Instant time = Objects.requireNonNull(appointmentAt, "appointmentAt").toInstant();
+        Objects.requireNonNull(policies, "政策列表不能为空");
+        Objects.requireNonNull(storeId, "门店编号不能为空");
+        Objects.requireNonNull(modelCode, "车型编号不能为空");
+        Instant time = Objects.requireNonNull(appointmentAt, "预约时间不能为空").toInstant();
 
         List<PolicySource> matches = policies.stream()
                 .filter(policy -> policy.storeId().equals(storeId))

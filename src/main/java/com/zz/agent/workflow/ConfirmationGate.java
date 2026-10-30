@@ -4,16 +4,16 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * Pure confirmation check. A REVALIDATING decision only permits fresh, read-only checks.
- * The caller must atomically claim the transition and handle repeated requests before
- * any downstream assignment call; this class does not persist state or call that API.
+ * 纯规则确认检查。REVALIDATING 只允许重新执行只读核验。
+ * 调用方必须在下游分配接口执行前，原子地占用状态流转并处理重复请求；
+ * 此类既不持久化任务状态，也不调用分配接口。
  */
 public class ConfirmationGate {
 
     public ConfirmationDecision decide(ConfirmationTask task, ConfirmationCommand command, Instant now) {
-        Objects.requireNonNull(task, "task");
-        Objects.requireNonNull(command, "command");
-        Objects.requireNonNull(now, "now");
+        Objects.requireNonNull(task, "任务不能为空");
+        Objects.requireNonNull(command, "确认指令不能为空");
+        Objects.requireNonNull(now, "当前时间不能为空");
 
         if (task.state() != TaskState.AWAITING_CONFIRMATION) {
             return ConfirmationDecision.STALE_PROPOSAL;

@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Replays fixed policy-only cases and keeps reviewable reports, including failures. */
+/** 重放固定的政策检索案例，保留包括失败案例在内的可核查报告。 */
 class PolicyRetrievalEvaluationTest {
 
     private static final Path POLICY_DIRECTORY = Path.of("data/policies");

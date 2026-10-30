@@ -12,7 +12,7 @@ import org.springframework.test.context.ActiveProfiles;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-/** Run explicitly after configuring a real DeepSeek key; never part of the default test suite. */
+/** 配好真实 DeepSeek 密钥后手动运行；普通测试集不会运行。 */
 @EnabledIfSystemProperty(named = "deepseek.live", matches = "true")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ActiveProfiles("deepseek")

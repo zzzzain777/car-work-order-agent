@@ -11,7 +11,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** An offline keyword baseline over eligible simulated policy text. */
+/** 在适用的模拟政策正文上运行离线关键词基线。 */
 public final class PolicyKeywordSearch {
 
     private static final Pattern WORDS =
@@ -43,7 +43,7 @@ public final class PolicyKeywordSearch {
             OffsetDateTime appointmentAt,
             String question
     ) {
-        Set<String> keywords = keywords(Objects.requireNonNull(question, "question"));
+        Set<String> keywords = keywords(Objects.requireNonNull(question, "问题不能为空"));
         PolicyMetadataFilter.Result eligible = metadataFilter.find(policies, storeId, modelCode, appointmentAt);
         if (eligible.outcome() == PolicyMetadataFilter.Outcome.NO_MATCH) {
             return new Result(Status.NO_APPLICABLE_POLICY, List.of());

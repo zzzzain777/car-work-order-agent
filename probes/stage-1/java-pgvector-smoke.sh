@@ -27,7 +27,7 @@ for attempt in {1..30}; do
   sleep 1
 done
 if [[ "$ready" != true ]]; then
-  echo "Temporary pgvector database did not become ready" >&2
+  echo "临时 pgvector 数据库未能就绪" >&2
   exit 1
 fi
 

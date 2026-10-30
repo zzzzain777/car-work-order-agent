@@ -7,7 +7,7 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** Splits a policy at level-two Markdown rule headings. */
+/** 按 Markdown 二级规则标题切分政策。 */
 public final class PolicyRuleChunker {
 
     private static final Pattern RULE_HEADING = Pattern.compile("(?m)^##[ \\t]+(.+?)[ \\t]*\\r?$");
@@ -16,7 +16,7 @@ public final class PolicyRuleChunker {
     }
 
     public List<Chunk> split(PolicySource policy) {
-        Objects.requireNonNull(policy, "policy");
+        Objects.requireNonNull(policy, "政策不能为空");
         String body = policy.body();
         Matcher matcher = RULE_HEADING.matcher(body);
         List<Heading> headings = new ArrayList<>();

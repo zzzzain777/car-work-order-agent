@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/** Checks the opt-in Bailian profile without sending a request to the paid service. */
+/** 检查可选的百炼向量模型接线，不向付费服务发送请求。 */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ActiveProfiles("bailian-embedding")
 class BailianEmbeddingFrameworkIntegrationTest {

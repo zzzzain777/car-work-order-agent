@@ -1,5 +1,5 @@
-# 仅在显式启用 bailian-embedding Profile 时接入百炼向量模型。
-# Base URL 与 API Key 放在 Git 忽略的 ./config/application-bailian-embedding.yml。
+# 仅在显式启用 bailian-embedding 配置组时接入百炼向量模型。
+# 接口地址与密钥放在 Git 忽略的 ./config/application-bailian-embedding.yml。
 spring:
   ai:
     model:
