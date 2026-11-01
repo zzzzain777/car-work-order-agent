@@ -60,6 +60,12 @@ class PolicyRagLiveIntegrationTest {
     }
 
     @Test
+    void previewWithoutSessionIsRejectedByRunningApplication() {
+        ResponseEntity<String> response = rest.getForEntity("/api/agent/preview?workOrderId=1001", String.class);
+        assertEquals(401, response.getStatusCode().value());
+    }
+
+    @Test
     void replaysFixedPolicyCasesAgainstRealModelAndDatabase() throws Exception {
         Path casesPath = Path.of("data/eval/retrieval/keyword-holdout-v1.tsv");
         List<String> lines = Files.readAllLines(casesPath, StandardCharsets.UTF_8);

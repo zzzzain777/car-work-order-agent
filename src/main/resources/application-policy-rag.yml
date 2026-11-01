@@ -4,6 +4,8 @@ server:
   address: 127.0.0.1
 
 agent:
+  car-system:
+    base-url: http://127.0.0.1:8080
   rag:
     policy-directory: data/policies
     embedding-model-id: qwen3.7-text-embedding-flash

@@ -1,6 +1,6 @@
 # 汽车工单智能处置 Agent
 
-这是独立的 Java 21 / Spring Boot 项目。目前有可启动的应用骨架、健康检查、阶段 0 技术探针、DeepSeek 的框架接线及一次真实短文本联通结果、基于模拟门店的纯 Java“最近五家”筛选、管理员确认前的纯规则判断，以及模拟政策的加载、校验、离线关键词基线和可选的百炼 Embedding + pgvector 只读检索。完整状态机、业务工具、客户选店和真实分配尚未实现。[第一版设计](docs/superpowers/specs/2026-10-20-car-work-order-agent-design.md)和[阶段 0 决策](docs/verification/stage-0/decision.md)记录了边界与未通过的联调门槛。
+这是独立的 Java 21 / Spring Boot 项目。目前有可启动的应用骨架、健康检查、阶段 0 技术探针、DeepSeek 的框架接线及一次真实短文本联通结果、基于模拟门店的纯 Java“最近五家”筛选、管理员确认前的纯规则判断、模拟政策向量检索，以及工单与顾问数据的**只读建议预览**。预览使用 `carSystem` 的 HTTP GET 接口，不保存任务，也不允许分配；完整持久化状态机、客户选店和真实分配尚未实现。[第一版设计](docs/superpowers/specs/2026-10-20-car-work-order-agent-design.md)和[阶段 0 决策](docs/verification/stage-0/decision.md)记录了边界与未通过的联调门槛。
 
 ## 在 IDEA 中运行
 
@@ -10,6 +10,7 @@
 
 4. 百炼 Embedding 单独使用 `bailian-embedding` Profile：模型为 `qwen3.7-text-embedding-flash`，默认输出 1024 维。业务空间 Base URL 和 Key 只写在被 Git 忽略的 `config/application-bailian-embedding.yml`，公开模板见同名 `.example`。启用后可用 `BailianEmbeddingLiveSmokeTest` 做一次模拟短文本联通，默认测试集不会发出真实请求。该模型在本账号的免费额度页面显示 2026-11-30 到期；免费额度用完即停已开启。过期后需重新核对额度，不能把当前免费状态视为永久免费。接线和实测边界见[百炼 Embedding 记录](docs/verification/stage-1/bailian-embedding.md)。
 5. 如需跑模拟政策向量检索，先在项目根目录执行 `bash probes/stage-1/start-policy-rag-db.sh`，再在 IDEA 的运行配置中把活动配置组设为 `policy-rag,bailian-embedding`。脚本会启动只绑定本机的 pgvector，并把随机生成的数据库密码写入 Git 忽略的 `config/application-policy-rag.yml`。如果没有 Docker，可参考同目录的 `.example` 模板填写自己的本地 PostgreSQL 连接。接口、请求示例与验证结果见[政策向量检索记录](docs/verification/stage-1/policy-rag.md)。
+6. 同一配置组下另有本机 `GET /api/agent/preview`，根据当前管理员 Session 读取试驾工单、模拟政策和顾问工作量，返回“缺信息／需人工核对／待管理员核对”的预览结果。[只读预览联调记录](docs/verification/stage-1/read-only-advice.md)写明输入、限制和测试证据。它没有确认或分配接口；当前还未完成真实管理员 Session 的端到端联调。
 
 Java 21 + Spring Boot 3.5.8 是当前**可启动骨架**的版本；pgvector 已有[隔离 SQL 探针](docs/verification/stage-0/pgvector-probe.md)和[无 Key 的 Java 接线探针](docs/verification/stage-1/java-pgvector-probe.md)。DeepSeek 的 `deepseek-flash` 完成了一次真实短文本联通；百炼的 `qwen3.7-text-embedding-flash` 已与本地 pgvector 跑通模拟政策检索。登录态与真实分配仍待逐项验证。
 

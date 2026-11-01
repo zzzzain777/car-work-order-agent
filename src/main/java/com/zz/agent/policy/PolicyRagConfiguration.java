@@ -1,5 +1,8 @@
 package com.zz.agent.policy;
 
+import com.zz.agent.integration.CarSystemReadClient;
+import com.zz.agent.integration.HttpCarSystemReadClient;
+import com.zz.agent.workflow.ReadOnlyAdviceFlow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -13,7 +16,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import javax.sql.DataSource;
+import java.net.URI;
 import java.nio.file.Path;
+import java.time.Clock;
 
 /** 仅在显式启用政策检索时创建数据库和向量库，不影响默认启动。 */
 @Configuration(proxyBeanMethods = false)
@@ -63,5 +68,15 @@ public class PolicyRagConfiguration {
             PolicyIndexService.Result result = index.refresh();
             LOG.info("模拟政策索引就绪：片段数={}，本次更新={}", result.documents(), result.changed());
         };
+    }
+
+    @Bean
+    CarSystemReadClient carSystemReadClient(@Value("${agent.car-system.base-url}") String baseUrl) {
+        return new HttpCarSystemReadClient(URI.create(baseUrl));
+    }
+
+    @Bean
+    ReadOnlyAdviceFlow readOnlyAdviceFlow(CarSystemReadClient carSystem, PolicyRagService policies) {
+        return new ReadOnlyAdviceFlow(carSystem, policies::search, Clock.systemUTC());
     }
 }
