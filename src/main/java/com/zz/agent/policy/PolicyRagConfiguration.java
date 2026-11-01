@@ -3,6 +3,8 @@ package com.zz.agent.policy;
 import com.zz.agent.integration.CarSystemReadClient;
 import com.zz.agent.integration.HttpCarSystemReadClient;
 import com.zz.agent.workflow.ReadOnlyAdviceFlow;
+import com.zz.agent.workflow.JdbcAgentTaskStore;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -78,5 +80,15 @@ public class PolicyRagConfiguration {
     @Bean
     ReadOnlyAdviceFlow readOnlyAdviceFlow(CarSystemReadClient carSystem, PolicyRagService policies) {
         return new ReadOnlyAdviceFlow(carSystem, policies::search, Clock.systemUTC());
+    }
+
+    @Bean
+    JdbcAgentTaskStore jdbcAgentTaskStore(JdbcTemplate policyJdbcTemplate, ObjectMapper json) {
+        return new JdbcAgentTaskStore(policyJdbcTemplate, json);
+    }
+
+    @Bean
+    ApplicationRunner initializeAgentTaskTable(JdbcAgentTaskStore tasks) {
+        return args -> tasks.initializeSchema();
     }
 }
