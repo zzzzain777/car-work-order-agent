@@ -1,10 +1,11 @@
 package com.zz.agent.policy;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zz.agent.integration.CarSystemReadClient;
 import com.zz.agent.integration.HttpCarSystemReadClient;
-import com.zz.agent.workflow.ReadOnlyAdviceFlow;
+import com.zz.agent.workflow.AgentTaskWorkflow;
 import com.zz.agent.workflow.JdbcAgentTaskStore;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zz.agent.workflow.ReadOnlyAdviceFlow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -90,5 +91,11 @@ public class PolicyRagConfiguration {
     @Bean
     ApplicationRunner initializeAgentTaskTable(JdbcAgentTaskStore tasks) {
         return args -> tasks.initializeSchema();
+    }
+
+    @Bean
+    AgentTaskWorkflow agentTaskWorkflow(CarSystemReadClient carSystem, ReadOnlyAdviceFlow advice,
+                                        JdbcAgentTaskStore tasks) {
+        return new AgentTaskWorkflow(carSystem, advice, tasks, Clock.systemUTC());
     }
 }

@@ -1,6 +1,6 @@
 # 汽车工单智能处置 Agent
 
-这是独立的 Java 21 / Spring Boot 项目。目前有可启动的应用骨架、健康检查、阶段 0 技术探针、DeepSeek 的框架接线及一次真实短文本联通结果、基于模拟门店的纯 Java“最近五家”筛选、管理员确认前的纯规则判断、模拟政策向量检索，以及工单与顾问数据的**只读建议预览**。另有 Agent 自有的[任务持久化内部能力](docs/verification/stage-1/durable-agent-task.md)：可保存版本、补充信息和精简预览，但尚未连接浏览器写入口。当前 `GET` 预览仍不保存任务，也不允许分配；完整持久化流程、客户选店和真实分配尚未实现。[第一版设计](docs/superpowers/specs/2026-10-20-car-work-order-agent-design.md)和[阶段 0 决策](docs/verification/stage-0/decision.md)记录了边界与未通过的联调门槛。
+这是独立的 Java 21 / Spring Boot 项目。目前有可启动的应用骨架、健康检查、阶段 0 技术探针、DeepSeek 的框架接线及一次真实短文本联通结果、基于模拟门店的纯 Java“最近五家”筛选、管理员确认前的纯规则判断、模拟政策向量检索，以及工单与顾问数据的**只读建议预览**。Agent 自有的[任务持久化能力](docs/verification/stage-1/durable-agent-task.md)已与[只读预览内部流程](docs/verification/stage-1/task-preview-wiring.md)接通，可保存版本、补充信息和精简证据。当前 `GET` 预览仍不保存任务，也不允许分配；浏览器任务写入口、客户选店和真实分配尚未实现。[第一版设计](docs/superpowers/specs/2026-10-20-car-work-order-agent-design.md)和[阶段 0 决策](docs/verification/stage-0/decision.md)记录了边界与未通过的联调门槛。
 
 ## 在 IDEA 中运行
 
