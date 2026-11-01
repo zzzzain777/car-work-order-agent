@@ -38,4 +38,4 @@ docker run --rm --network "$probe_net" \
   -e AGENT_PGVECTOR_PASSWORD="$probe_password" \
   -v "$project_root":/workspace -v "$HOME/.m2":/root/.m2 -w /workspace \
   maven:3.9.9-eclipse-temurin-21 \
-  mvn -q -Dtest=PolicyPgVectorProbeTest,JdbcAgentTaskStoreProbeTest,AgentTaskWorkflowProbeTest test
+  mvn -q -Dtest=PolicyPgVectorProbeTest,JdbcAgentTaskStoreProbeTest,AgentTaskWorkflowProbeTest,SimulatedConfirmationProbeTest test
