@@ -67,6 +67,17 @@ class DeepSeekFrameworkIntegrationTest {
         assertNull(LAST_REQUEST.get());
     }
 
+    @Test
+    void sendsSeparateSystemAndUserMessages() throws Exception {
+        generator.generate("你是只读建议助手", "只回答 OK");
+
+        JsonNode messages = JSON.readTree(LAST_REQUEST.get().body()).path("messages");
+        assertEquals("system", messages.get(0).path("role").asText());
+        assertEquals("你是只读建议助手", messages.get(0).path("content").asText());
+        assertEquals("user", messages.get(1).path("role").asText());
+        assertEquals("只回答 OK", messages.get(1).path("content").asText());
+    }
+
     private static HttpServer startServer() {
         try {
             HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);

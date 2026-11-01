@@ -25,4 +25,12 @@ public final class ModelTextGenerator {
         return Objects.requireNonNull(chatClient.prompt().user(prompt).call().chatResponse(),
                 "模型没有返回响应");
     }
+
+    public ChatResponse generate(String systemPrompt, String userPrompt) {
+        if (systemPrompt == null || systemPrompt.isBlank() || userPrompt == null || userPrompt.isBlank()) {
+            throw new IllegalArgumentException("系统规则和用户输入不能为空");
+        }
+        return Objects.requireNonNull(chatClient.prompt().system(systemPrompt).user(userPrompt)
+                .call().chatResponse(), "模型没有返回响应");
+    }
 }

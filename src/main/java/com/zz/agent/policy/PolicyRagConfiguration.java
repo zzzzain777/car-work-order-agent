@@ -3,11 +3,15 @@ package com.zz.agent.policy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zz.agent.integration.CarSystemReadClient;
 import com.zz.agent.integration.HttpCarSystemReadClient;
+import com.zz.agent.model.ModelTextGenerator;
+import com.zz.agent.workflow.AgentAdviceOrchestrator;
 import com.zz.agent.workflow.AgentTaskWorkflow;
 import com.zz.agent.workflow.JdbcAgentTaskStore;
 import com.zz.agent.workflow.ReadOnlyAdviceFlow;
+import com.zz.agent.workflow.StructuredAdviceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
 import org.springframework.beans.factory.annotation.Value;
@@ -97,5 +101,28 @@ public class PolicyRagConfiguration {
     AgentTaskWorkflow agentTaskWorkflow(CarSystemReadClient carSystem, ReadOnlyAdviceFlow advice,
                                         JdbcAgentTaskStore tasks) {
         return new AgentTaskWorkflow(carSystem, advice, tasks, Clock.systemUTC());
+    }
+
+    @Bean
+    @Profile("deepseek")
+    StructuredAdviceService structuredAdviceService(ModelTextGenerator generator, ObjectMapper json) {
+        return new StructuredAdviceService((system, user) -> {
+            ChatResponse response = generator.generate(system, user);
+            var metadata = response.getMetadata();
+            var usage = metadata == null ? null : metadata.getUsage();
+            return new StructuredAdviceService.Completion(
+                    response.getResult() == null || response.getResult().getOutput() == null
+                            ? null : response.getResult().getOutput().getText(),
+                    metadata == null ? null : metadata.getModel(),
+                    usage == null || usage.getPromptTokens() == null ? 0 : usage.getPromptTokens().longValue(),
+                    usage == null || usage.getCompletionTokens() == null ? 0
+                            : usage.getCompletionTokens().longValue());
+        }, json);
+    }
+
+    @Bean
+    @Profile("deepseek")
+    AgentAdviceOrchestrator agentAdviceOrchestrator(AgentTaskWorkflow workflow, StructuredAdviceService advice) {
+        return new AgentAdviceOrchestrator(workflow, advice);
     }
 }

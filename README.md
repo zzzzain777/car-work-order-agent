@@ -1,6 +1,6 @@
 # 汽车工单智能处置 Agent
 
-这是独立的 Java 21 / Spring Boot 项目。目前有可启动的应用骨架、健康检查、阶段 0 技术探针、DeepSeek 的框架接线及一次真实短文本联通结果、基于模拟门店的纯 Java“最近五家”筛选、管理员确认前的纯规则判断、模拟政策向量检索，以及工单与顾问数据的**只读建议预览**。Agent 自有的[任务持久化能力](docs/verification/stage-1/durable-agent-task.md)已与[只读预览内部流程](docs/verification/stage-1/task-preview-wiring.md)接通，可保存版本、补充信息和精简证据。当前 `GET` 预览仍不保存任务，也不允许分配；浏览器任务写入口、客户选店和真实分配尚未实现。[第一版设计](docs/superpowers/specs/2026-10-20-car-work-order-agent-design.md)和[阶段 0 决策](docs/verification/stage-0/decision.md)记录了边界与未通过的联调门槛。
+这是独立的 Java 21 / Spring Boot 项目。目前有可启动的应用骨架、健康检查、阶段 0 技术探针、DeepSeek 的框架接线及一次真实短文本联通结果、基于模拟门店的纯 Java“最近五家”筛选、管理员确认前的纯规则判断、模拟政策向量检索，以及工单与顾问数据的**只读建议预览**。Agent 自有的[任务持久化能力](docs/verification/stage-1/durable-agent-task.md)已与[只读预览内部流程](docs/verification/stage-1/task-preview-wiring.md)接通，并有[模型结构化建议与引用核验](docs/verification/stage-1/structured-advice.md)的内部链路。当前 `GET` 预览仍不保存任务，也不允许分配；浏览器任务写入口、客户选店和真实分配尚未实现。[第一版设计](docs/superpowers/specs/2026-10-20-car-work-order-agent-design.md)和[阶段 0 决策](docs/verification/stage-0/decision.md)记录了边界与未通过的联调门槛。
 
 ## 在 IDEA 中运行
 
@@ -12,6 +12,7 @@
 5. 如需跑模拟政策向量检索，先在项目根目录执行 `bash probes/stage-1/start-policy-rag-db.sh`，再在 IDEA 的运行配置中把活动配置组设为 `policy-rag,bailian-embedding`。脚本会启动只绑定本机的 pgvector，并把随机生成的数据库密码写入 Git 忽略的 `config/application-policy-rag.yml`。如果没有 Docker，可参考同目录的 `.example` 模板填写自己的本地 PostgreSQL 连接。接口、请求示例与验证结果见[政策向量检索记录](docs/verification/stage-1/policy-rag.md)。
 6. 同一配置组下另有本机 `GET /api/agent/preview`，根据当前管理员 Session 读取试驾工单、模拟政策和顾问工作量，返回“缺信息／需人工核对／待管理员核对”的预览结果。[只读预览联调记录](docs/verification/stage-1/read-only-advice.md)写明输入、限制和测试证据。它没有确认或分配接口；当前还未完成真实管理员 Session 的端到端联调。
 7. 任务表会在 `policy-rag` 启动时初始化，但当前没有任务写入 HTTP 接口。隔离数据库测试可执行 `bash probes/stage-1/java-pgvector-smoke.sh`；[任务持久化记录](docs/verification/stage-1/durable-agent-task.md)列出已覆盖的版本与隔离规则。
+8. 同时启用 `policy-rag,deepseek,bailian-embedding` 时，内部 `AgentAdviceOrchestrator` 可对已保存的任务刷新证据并生成经引用核验的候选建议；目前没有对外路由。[模型建议记录](docs/verification/stage-1/structured-advice.md)说明输入、拒绝规则和测试范围。
 
 Java 21 + Spring Boot 3.5.8 是当前**可启动骨架**的版本；pgvector 已有[隔离 SQL 探针](docs/verification/stage-0/pgvector-probe.md)和[无 Key 的 Java 接线探针](docs/verification/stage-1/java-pgvector-probe.md)。DeepSeek 的 `deepseek-flash` 完成了一次真实短文本联通；百炼的 `qwen3.7-text-embedding-flash` 已与本地 pgvector 跑通模拟政策检索。登录态与真实分配仍待逐项验证。
 

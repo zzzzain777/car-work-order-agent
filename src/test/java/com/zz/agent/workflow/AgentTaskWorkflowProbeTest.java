@@ -14,6 +14,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -107,6 +108,50 @@ class AgentTaskWorkflowProbeTest {
         assertEquals(null, current.preview());
     }
 
+    @Test
+    void completeTaskRefreshProducesValidatedModelCandidate() {
+        FakeCarSystem car = new FakeCarSystem();
+        AgentTaskWorkflow workflow = workflow(car, new PolicyStub(), store());
+        JdbcAgentTaskStore.Task task = workflow.open(COOKIE, 1001);
+        workflow.supplement(COOKIE, task.id(), 0, COMPLETE).orElseThrow();
+        AtomicInteger modelCalls = new AtomicInteger();
+        StructuredAdviceService advice = new StructuredAdviceService((system, user) -> {
+            modelCalls.incrementAndGet();
+            return new StructuredAdviceService.Completion("""
+                    {"advisorId":301,"citations":[{"sourceRef":"data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1",
+                    "quote":"工作日可以提交试驾申请"}]}
+                    """, "deepseek-flash", 20, 10);
+        }, new ObjectMapper());
+        AgentAdviceOrchestrator orchestrator = new AgentAdviceOrchestrator(workflow, advice);
+
+        AgentAdviceOrchestrator.Recommendation result = orchestrator.refreshAndSuggest(COOKIE, task.id(), 1)
+                .orElseThrow();
+
+        assertEquals(TaskState.READY_FOR_ADMIN_REVIEW, result.task().state());
+        assertEquals(StructuredAdviceService.Outcome.CANDIDATE, result.advice().outcome());
+        assertEquals(301L, result.advice().advisorId());
+        assertEquals(1, modelCalls.get());
+    }
+
+    @Test
+    void missingInputStopsBeforeModelCall() {
+        FakeCarSystem car = new FakeCarSystem();
+        AgentTaskWorkflow workflow = workflow(car, new PolicyStub(), store());
+        JdbcAgentTaskStore.Task task = workflow.open(COOKIE, 1001);
+        AtomicInteger modelCalls = new AtomicInteger();
+        StructuredAdviceService advice = new StructuredAdviceService((system, user) -> {
+            modelCalls.incrementAndGet();
+            return new StructuredAdviceService.Completion("{}", "deepseek-flash", 0, 0);
+        }, new ObjectMapper());
+
+        AgentAdviceOrchestrator.Recommendation result =
+                new AgentAdviceOrchestrator(workflow, advice).refreshAndSuggest(COOKIE, task.id(), 0).orElseThrow();
+
+        assertEquals(TaskState.NEEDS_INPUT, result.task().state());
+        assertEquals(StructuredAdviceService.Outcome.NEEDS_REVIEW, result.advice().outcome());
+        assertEquals(0, modelCalls.get());
+    }
+
     private static AgentTaskWorkflow workflow(FakeCarSystem car, PolicyStub policies, JdbcAgentTaskStore store) {
         return new AgentTaskWorkflow(car, new ReadOnlyAdviceFlow(car, policies, CLOCK), store, CLOCK);
     }
@@ -125,7 +170,8 @@ class AgentTaskWorkflowProbeTest {
         static final PolicyEvidenceGate.Decision DECISION = new PolicyEvidenceGate.Decision(
                 PolicyEvidenceGate.Outcome.CANDIDATES,
                 List.of(new PolicyEvidenceGate.Evidence("chunk-1", "POL-A", 1,
-                        "data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1", "模拟政策原文")));
+                        "data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1",
+                        "模拟政策原文：工作日可以提交试驾申请。")));
         int calls;
 
         @Override
