@@ -1,0 +1,154 @@
+{
+  "scope": "simulated-nearby-store-selection-v1",
+  "status": "draft-expected-results-not-measured",
+  "asOf": "2026-10-28T10:00:00+08:00",
+  "workOrder": {
+    "id": 1002,
+    "type": 1,
+    "status": 0,
+    "advisorId": null,
+    "customerId": 5001
+  },
+  "request": {
+    "customerId": 5001,
+    "customerLocation": {"latitude": 31.230400, "longitude": 121.473700},
+    "modelInput": "MX7",
+    "confirmedModelCode": "MX-7",
+    "appointmentAt": "2026-11-07T14:00:00+08:00"
+  },
+  "stores": [
+    {"id": "STORE-F", "latitude": 31.230400, "longitude": 121.505200, "open": true, "supportsTestDrive": true},
+    {"id": "STORE-D", "latitude": 31.230400, "longitude": 121.494700, "open": true, "supportsTestDrive": true},
+    {"id": "STORE-B", "latitude": 31.230400, "longitude": 121.484200, "open": true, "supportsTestDrive": true},
+    {"id": "STORE-E", "latitude": 31.207900, "longitude": 121.473700, "open": true, "supportsTestDrive": true},
+    {"id": "STORE-C", "latitude": 31.216900, "longitude": 121.473700, "open": true, "supportsTestDrive": true},
+    {"id": "STORE-A", "latitude": 31.234900, "longitude": 121.473700, "open": true, "supportsTestDrive": true}
+  ],
+  "availability": {
+    "snapshotId": "C02-SNAPSHOT-1",
+    "observedAt": "2026-10-28T10:00:00+08:00",
+    "modelCode": "MX-7",
+    "appointmentAt": "2026-11-07T14:00:00+08:00",
+    "byStore": {
+      "STORE-A": {"vehicle": "AVAILABLE", "slot": "AVAILABLE"},
+      "STORE-B": {"vehicle": "UNAVAILABLE", "slot": "NOT_APPLICABLE"},
+      "STORE-C": {"vehicle": "AVAILABLE", "slot": "AVAILABLE"},
+      "STORE-D": {"vehicle": "AVAILABLE", "slot": "FULL"},
+      "STORE-E": {"vehicle": "AVAILABLE", "slot": "AVAILABLE"},
+      "STORE-F": {"vehicle": "AVAILABLE", "slot": "AVAILABLE"}
+    }
+  },
+  "expectedInitialDisplay": {
+    "storeIdsInOrder": ["STORE-A", "STORE-B", "STORE-C", "STORE-D", "STORE-E"],
+    "selectableStoreIds": ["STORE-A", "STORE-C", "STORE-E"],
+    "distanceUnit": "straight-line-km",
+    "simulated": true
+  },
+  "selectionCases": [
+    {
+      "id": "C02-SELECT-C",
+      "actorId": 5001,
+      "selectedStoreId": "STORE-C",
+      "availabilityAtSelection": {"snapshotId": "C02-SNAPSHOT-2", "vehicle": "AVAILABLE", "slot": "AVAILABLE"},
+      "expectedDecision": "ACCEPT",
+      "expectedStoredStoreId": "STORE-C",
+      "expectedStoredSelectionAt": "2026-10-28T10:01:00+08:00",
+      "expectedStoredSnapshotId": "C02-SNAPSHOT-2",
+      "expectedAssignmentPostCalls": 0
+    },
+    {
+      "id": "C02-DUPLICATE-CHOICE",
+      "actorId": 5001,
+      "selectedStoreId": "STORE-C",
+      "priorSelection": {"storeId": "STORE-C", "selectedAt": "2026-10-28T10:01:00+08:00", "snapshotId": "C02-SNAPSHOT-2"},
+      "expectedDecision": "RETURN_EXISTING",
+      "expectedStoredStoreId": "STORE-C",
+      "expectedStoredSelectionAt": "2026-10-28T10:01:00+08:00",
+      "expectedStoredSnapshotId": "C02-SNAPSHOT-2",
+      "expectedAssignmentPostCalls": 0
+    },
+    {
+      "id": "C02-CONCURRENT-CHOICE",
+      "actorId": 5001,
+      "selectedStoreId": "STORE-A",
+      "priorSelection": {"storeId": "STORE-C", "selectedAt": "2026-10-28T10:01:00+08:00", "snapshotId": "C02-SNAPSHOT-2"},
+      "submittedWithOldTaskVersion": true,
+      "expectedDecision": "VERSION_CONFLICT",
+      "expectedStoredStoreId": "STORE-C",
+      "expectedAssignmentPostCalls": 0
+    },
+    {
+      "id": "C02-NO-VEHICLE",
+      "actorId": 5001,
+      "selectedStoreId": "STORE-B",
+      "expectedDecision": "REJECT_UNAVAILABLE",
+      "expectedStoredStoreId": null,
+      "expectedAssignmentPostCalls": 0
+    },
+    {
+      "id": "C02-SLOT-FULL",
+      "actorId": 5001,
+      "selectedStoreId": "STORE-D",
+      "expectedDecision": "REJECT_UNAVAILABLE",
+      "expectedStoredStoreId": null,
+      "expectedAssignmentPostCalls": 0
+    },
+    {
+      "id": "C02-SIXTH-STORE",
+      "actorId": 5001,
+      "selectedStoreId": "STORE-F",
+      "expectedDecision": "REJECT_OUTSIDE_FIRST_FIVE",
+      "expectedStoredStoreId": null,
+      "expectedAssignmentPostCalls": 0
+    },
+    {
+      "id": "C02-STALE-C",
+      "actorId": 5001,
+      "selectedStoreId": "STORE-C",
+      "availabilityAtSelection": {"snapshotId": "C02-SNAPSHOT-CHANGED", "vehicle": "AVAILABLE", "slot": "FULL"},
+      "expectedDecision": "REFRESH_REQUIRED",
+      "expectedStoredStoreId": null,
+      "expectedAssignmentPostCalls": 0
+    },
+    {
+      "id": "C02-OTHER-CUSTOMER",
+      "actorId": 5002,
+      "selectedStoreId": "STORE-C",
+      "expectedDecision": "FORBIDDEN",
+      "expectedStoredStoreId": null,
+      "expectedAssignmentPostCalls": 0
+    },
+    {
+      "id": "C02-NO-LOCATION",
+      "actorId": 5001,
+      "customerLocation": null,
+      "selectedStoreId": null,
+      "expectedDecision": "NEEDS_LOCATION",
+      "expectedStoredStoreId": null,
+      "expectedAssignmentPostCalls": 0
+    },
+    {
+      "id": "C02-NO-TIME",
+      "actorId": 5001,
+      "appointmentAt": null,
+      "selectedStoreId": null,
+      "expectedDecision": "NEEDS_APPOINTMENT_TIME",
+      "expectedStoredStoreId": null,
+      "expectedAssignmentPostCalls": 0
+    },
+    {
+      "id": "C02-UNKNOWN-AVAILABILITY",
+      "actorId": 5001,
+      "selectedStoreId": "STORE-C",
+      "availabilityAtSelection": {"snapshotId": "C02-SNAPSHOT-ERROR", "vehicle": "UNKNOWN", "slot": "UNKNOWN"},
+      "expectedDecision": "REFRESH_REQUIRED",
+      "expectedStoredStoreId": null,
+      "expectedAssignmentPostCalls": 0
+    }
+  ],
+  "invariants": {
+    "selectedStorePersistedOnlyInAgentTask": true,
+    "changesOriginalCarSystemOrder": false,
+    "createsRealReservation": false
+  }
+}
