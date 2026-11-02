@@ -1,0 +1,38 @@
+{
+  "caseId" : "C02-SELECT-C",
+  "runDate" : "2026-11-02",
+  "caseFile" : "data/eval/store-selection/c02-v1.json",
+  "mode" : "offline: simulated carSystem, simulated store catalog, keyword policy retrieval, deterministic model",
+  "steps" : [ {
+    "step" : "admin_open",
+    "state" : "NEEDS_INPUT"
+  }, {
+    "displayed" : [ "STORE-A", "STORE-B", "STORE-C", "STORE-D", "STORE-E" ],
+    "selectable" : [ "STORE-A", "STORE-C", "STORE-E" ],
+    "step" : "customer_offer"
+  }, {
+    "sameSnapshotAsOffer" : true,
+    "snapshotId" : "simulated-v1:941ba55a13b9bc4043547b3238d1c0a66fff3ee2229102049e7d9b7602375799:STORE-C:MX-7:2026-11-07T06:00:00Z",
+    "storeId" : "STORE-C",
+    "selectedAt" : "2026-10-28T02:01:00Z",
+    "step" : "customer_choose"
+  }, {
+    "modelCode" : "MX-7",
+    "appointmentAt" : "2026-11-07T06:00Z",
+    "step" : "admin_refresh",
+    "policySourceRefs" : [ "data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1" ],
+    "advisorIds" : [ 301, 302 ],
+    "state" : "READY_FOR_ADMIN_REVIEW"
+  }, {
+    "advisorId" : 301,
+    "processing" : 1,
+    "total" : 2,
+    "citation" : "data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1",
+    "step" : "advice",
+    "outcome" : "CANDIDATE"
+  } ],
+  "assignmentEnabled" : false,
+  "assignmentPostCalls" : 0,
+  "assignmentCallScope" : "offline replay has no assignment client",
+  "result" : "PASS"
+}

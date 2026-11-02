@@ -25,7 +25,7 @@
     {"id": "STORE-A", "latitude": 31.234900, "longitude": 121.473700, "open": true, "supportsTestDrive": true}
   ],
   "availability": {
-    "snapshotId": "C02-SNAPSHOT-1",
+    "snapshotId": "DERIVED_FROM_CATALOG_PER_STORE",
     "observedAt": "2026-10-28T10:00:00+08:00",
     "modelCode": "MX-7",
     "appointmentAt": "2026-11-07T14:00:00+08:00",
@@ -49,29 +49,29 @@
       "id": "C02-SELECT-C",
       "actorId": 5001,
       "selectedStoreId": "STORE-C",
-      "availabilityAtSelection": {"snapshotId": "C02-SNAPSHOT-2", "vehicle": "AVAILABLE", "slot": "AVAILABLE"},
+      "availabilityAtSelection": {"snapshotId": "SAME_AS_OFFER", "vehicle": "AVAILABLE", "slot": "AVAILABLE"},
       "expectedDecision": "ACCEPT",
       "expectedStoredStoreId": "STORE-C",
       "expectedStoredSelectionAt": "2026-10-28T10:01:00+08:00",
-      "expectedStoredSnapshotId": "C02-SNAPSHOT-2",
+      "expectedStoredSnapshotId": "SAME_AS_OFFER",
       "expectedAssignmentPostCalls": 0
     },
     {
       "id": "C02-DUPLICATE-CHOICE",
       "actorId": 5001,
       "selectedStoreId": "STORE-C",
-      "priorSelection": {"storeId": "STORE-C", "selectedAt": "2026-10-28T10:01:00+08:00", "snapshotId": "C02-SNAPSHOT-2"},
+      "priorSelection": {"storeId": "STORE-C", "selectedAt": "2026-10-28T10:01:00+08:00", "snapshotId": "SAME_AS_OFFER"},
       "expectedDecision": "RETURN_EXISTING",
       "expectedStoredStoreId": "STORE-C",
       "expectedStoredSelectionAt": "2026-10-28T10:01:00+08:00",
-      "expectedStoredSnapshotId": "C02-SNAPSHOT-2",
+      "expectedStoredSnapshotId": "SAME_AS_OFFER",
       "expectedAssignmentPostCalls": 0
     },
     {
       "id": "C02-CONCURRENT-CHOICE",
       "actorId": 5001,
       "selectedStoreId": "STORE-A",
-      "priorSelection": {"storeId": "STORE-C", "selectedAt": "2026-10-28T10:01:00+08:00", "snapshotId": "C02-SNAPSHOT-2"},
+      "priorSelection": {"storeId": "STORE-C", "selectedAt": "2026-10-28T10:01:00+08:00", "snapshotId": "SAME_AS_OFFER"},
       "submittedWithOldTaskVersion": true,
       "expectedDecision": "VERSION_CONFLICT",
       "expectedStoredStoreId": "STORE-C",
