@@ -10,12 +10,12 @@
 
 4. 百炼 Embedding 单独使用 `bailian-embedding` Profile：模型为 `qwen3.7-text-embedding-flash`，默认输出 1024 维。业务空间 Base URL 和 Key 只写在被 Git 忽略的 `config/application-bailian-embedding.yml`，公开模板见同名 `.example`。启用后可用 `BailianEmbeddingLiveSmokeTest` 做一次模拟短文本联通，默认测试集不会发出真实请求。该模型在本账号的免费额度页面显示 2026-11-30 到期；免费额度用完即停已开启。过期后需重新核对额度，不能把当前免费状态视为永久免费。接线和实测边界见[百炼 Embedding 记录](docs/verification/stage-1/bailian-embedding.md)。
 5. 如需跑模拟政策向量检索，先在项目根目录执行 `bash probes/stage-1/start-policy-rag-db.sh`，再在 IDEA 的运行配置中把活动配置组设为 `policy-rag,bailian-embedding`。脚本会启动只绑定本机的 pgvector，并把随机生成的数据库密码写入 Git 忽略的 `config/application-policy-rag.yml`。如果没有 Docker，可参考同目录的 `.example` 模板填写自己的本地 PostgreSQL 连接。接口、请求示例与验证结果见[政策向量检索记录](docs/verification/stage-1/policy-rag.md)。
-6. 同一配置组下另有本机 `GET /api/agent/preview`，根据当前管理员 Session 读取试驾工单、模拟政策和顾问工作量，返回“缺信息／需人工核对／待管理员核对”的预览结果。[只读预览联调记录](docs/verification/stage-1/read-only-advice.md)写明输入、限制和测试证据。它本身不保存任务；真实管理员 Session 的浏览器端到端联调仍待完成。
+6. 同一配置组下另有本机 `GET /api/agent/preview`，根据当前管理员 Session 读取试驾工单、模拟政策和顾问工作量，返回“缺信息／需人工核对／待管理员核对”的预览结果。[只读预览联调记录](docs/verification/stage-1/read-only-advice.md)写明输入、限制和测试证据。它本身不保存任务；任务操作页的真实管理员浏览器联调见下文。
 7. 任务表和提案表会在 `policy-rag` 启动时初始化。隔离数据库测试可执行 `bash probes/stage-1/java-pgvector-smoke.sh`；[任务持久化记录](docs/verification/stage-1/durable-agent-task.md)列出已覆盖的版本与隔离规则。
 8. 同时启用 `policy-rag,deepseek,bailian-embedding`，从项目根目录启动应用后，在浏览器打开 `http://localhost:8091/agent-demo.html`。先在**同一个浏览器**打开 `http://localhost:8080/api/index.html` 登录本机 `carSystem` 管理员；两页都使用 `localhost`，再回演示页点击“重新检查”。Chrome 与应用内浏览器的 Cookie 不共享。页面会依次创建任务、补充信息、显示政策和顾问依据、生成模型候选并做**模拟确认**；写入要求同源 Origin 和会话绑定的 CSRF Token。需要已有的 DeepSeek、百炼和本地数据库配置；详见[操作页记录](docs/verification/stage-1/local-demo-entry.md)。
 9. [模拟人工确认](docs/verification/stage-1/simulated-confirmation.md)的提案有效期 10 分钟，确认时复查管理员、工单、政策和顾问，持久化一次性尝试；模拟分配超时只复读工单并保持“结果未知”。网页接入的模拟端固定返回“拒绝”且绝不改 `carSystem`。正常成功、超时和并发结果由隔离测试验证，不能把网页操作算作真实分配联调。
 
-Java 21 + Spring Boot 3.5.8 是当前**可启动骨架**的版本；pgvector 已有[隔离 SQL 探针](docs/verification/stage-0/pgvector-probe.md)和[无 Key 的 Java 接线探针](docs/verification/stage-1/java-pgvector-probe.md)。DeepSeek 的 `deepseek-flash` 完成了一次真实短文本联通；百炼的 `qwen3.7-text-embedding-flash` 已与本地 pgvector 跑通模拟政策检索。登录态与真实分配仍待逐项验证。
+Java 21 + Spring Boot 3.5.8 是当前**可启动骨架**的版本；pgvector 已有[隔离 SQL 探针](docs/verification/stage-0/pgvector-probe.md)和[无 Key 的 Java 接线探针](docs/verification/stage-1/java-pgvector-probe.md)。DeepSeek 的 `deepseek-flash` 完成了一次真实短文本联通；百炼的 `qwen3.7-text-embedding-flash` 已与本地 pgvector 跑通模拟政策检索。真实管理员浏览器能读取证据并写入 Agent 任务；当前运行的 `carSystem` 在账号降级或封禁后仍接受旧 Session，真实分配必须保持关闭。[联调记录](docs/verification/stage-1/local-demo-entry.md)列出了通过项和失败项。
 
 政策检索有[候选证据判断](docs/verification/stage-1/policy-evidence-gate.md)：价格、实时车源等问题不会拿模拟试驾政策作依据；同范围多份政策交人工。可选的向量检索已返回真实存储的片段并核对原文，但还没有生成答案或进行答案事实核验。
 

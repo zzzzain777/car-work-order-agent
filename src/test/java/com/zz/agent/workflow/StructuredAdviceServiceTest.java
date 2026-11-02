@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -112,6 +113,36 @@ class StructuredAdviceServiceTest {
         assertTrue(advice.message().contains("人工核对"));
     }
 
+    @Test
+    void keepsLargeAdvisorSnapshotButOnlySendsFirstFiftyCandidatesToModel() throws Exception {
+        AtomicReference<String> userPrompt = new AtomicReference<>();
+        StructuredAdviceService service = new StructuredAdviceService((system, user) -> {
+            userPrompt.set(user);
+            return new StructuredAdviceService.Completion(VALID_JSON, "deepseek-flash", 120, 35);
+        }, new ObjectMapper());
+
+        StructuredAdviceService.Advice advice = service.suggest(readyWithAdvisors(51));
+
+        assertEquals(StructuredAdviceService.Outcome.CANDIDATE, advice.outcome());
+        var sent = new ObjectMapper().readTree(userPrompt.get()).path("advisors");
+        assertEquals(50, sent.size());
+        assertEquals(301, sent.get(0).path("advisorId").asInt());
+        assertEquals(350, sent.get(49).path("advisorId").asInt());
+    }
+
+    @Test
+    void rejectsAdvisorOutsideTheShortlistEvenWhenPresentInFullSnapshot() {
+        String excludedAdvisor = VALID_JSON.replace("\"advisorId\":301", "\"advisorId\":351");
+        StructuredAdviceService service = new StructuredAdviceService((system, user) ->
+                new StructuredAdviceService.Completion(excludedAdvisor, "deepseek-flash", 120, 35),
+                new ObjectMapper());
+
+        StructuredAdviceService.Advice advice = service.suggest(readyWithAdvisors(51));
+
+        assertEquals(StructuredAdviceService.Outcome.NEEDS_REVIEW, advice.outcome());
+        assertNull(advice.advisorId());
+    }
+
     private static AgentTaskWorkflow.Refresh ready() {
         Instant at = Instant.parse("2026-11-01T02:00:00Z");
         ReadOnlyAdviceFlow.Result result = new ReadOnlyAdviceFlow.Result(
@@ -124,6 +155,28 @@ class StructuredAdviceServiceTest {
                         OffsetDateTime.parse("2026-11-07T14:00:00+08:00")),
                 new JdbcAgentTaskStore.Preview(ReadOnlyAdviceFlow.Stage.READY_FOR_ADMIN_REVIEW,
                         List.of(SOURCE), List.of(new JdbcAgentTaskStore.AdvisorSnapshot(301, 1, 3, false)), at), at);
+        return new AgentTaskWorkflow.Refresh(task, result);
+    }
+
+    private static AgentTaskWorkflow.Refresh readyWithAdvisors(int count) {
+        AgentTaskWorkflow.Refresh base = ready();
+        List<ReadOnlyAdviceFlow.AdvisorLoad> advisors = IntStream.range(0, count)
+                .mapToObj(index -> new ReadOnlyAdviceFlow.AdvisorLoad(301 + index,
+                        "模拟顾问", 0, 0, false)).toList();
+        ReadOnlyAdviceFlow.Result result = new ReadOnlyAdviceFlow.Result(
+                base.result().stage(), base.result().workOrderId(), base.result().message(),
+                base.result().missingFields(), base.result().policyEvidence(), advisors,
+                base.result().observedAt(), false);
+        JdbcAgentTaskStore.Preview preview = new JdbcAgentTaskStore.Preview(
+                base.task().preview().stage(), base.task().preview().policySourceRefs(),
+                advisors.stream().map(advisor -> new JdbcAgentTaskStore.AdvisorSnapshot(
+                        advisor.advisorId(), advisor.processing(), advisor.total(),
+                        advisor.storeAffiliationVerified())).toList(), base.result().observedAt());
+        JdbcAgentTaskStore.Task original = base.task();
+        JdbcAgentTaskStore.Task task = new JdbcAgentTaskStore.Task(original.id(), original.adminId(),
+                original.workOrderId(), original.orderType(), original.orderStatus(),
+                original.orderAdvisorId(), original.orderUpdatedAt(), original.version(),
+                original.state(), original.supplement(), preview, original.updatedAt());
         return new AgentTaskWorkflow.Refresh(task, result);
     }
 }
