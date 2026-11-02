@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zz.agent.integration.CarSystemReadClient;
 import com.zz.agent.integration.HttpCarSystemReadClient;
 import com.zz.agent.model.ModelTextGenerator;
+import com.zz.agent.store.NearbyStoreAvailabilityService;
+import com.zz.agent.store.NearbyStoreSelector;
+import com.zz.agent.store.SimulatedStoreCatalog;
 import com.zz.agent.workflow.AgentAdviceOrchestrator;
 import com.zz.agent.workflow.AgentTaskWorkflow;
 import com.zz.agent.workflow.AgentTaskCsrf;
@@ -28,6 +31,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import javax.sql.DataSource;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -85,6 +89,19 @@ public class PolicyRagConfiguration {
     @Bean
     CarSystemReadClient carSystemReadClient(@Value("${agent.car-system.base-url}") String baseUrl) {
         return new HttpCarSystemReadClient(URI.create(baseUrl));
+    }
+
+    @Bean
+    @Profile("deepseek & bailian-embedding")
+    SimulatedStoreCatalog simulatedStoreCatalog() throws IOException {
+        return SimulatedStoreCatalog.load(Path.of("data/stores/simulated-v1.json"), Clock.systemUTC());
+    }
+
+    @Bean
+    @Profile("deepseek & bailian-embedding")
+    NearbyStoreAvailabilityService nearbyStoreAvailabilityService(SimulatedStoreCatalog catalog) {
+        return new NearbyStoreAvailabilityService(new NearbyStoreSelector(),
+                catalog.stores(), catalog, Clock.systemUTC());
     }
 
     @Bean

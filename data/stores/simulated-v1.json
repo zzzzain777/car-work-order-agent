@@ -1,0 +1,15 @@
+{
+  "version": "simulated-v1",
+  "simulated": true,
+  "modelCode": "MX-7",
+  "appointmentAt": "2026-11-07T14:00:00+08:00",
+  "description": "虚构门店与指定时段的试驾状态；不代表真实门店、现车或预约能力",
+  "stores": [
+    {"id": "STORE-F", "latitude": 31.230400, "longitude": 121.505200, "open": true, "supportsTestDrive": true, "vehicle": "AVAILABLE", "slot": "AVAILABLE"},
+    {"id": "STORE-D", "latitude": 31.230400, "longitude": 121.494700, "open": true, "supportsTestDrive": true, "vehicle": "AVAILABLE", "slot": "FULL"},
+    {"id": "STORE-B", "latitude": 31.230400, "longitude": 121.484200, "open": true, "supportsTestDrive": true, "vehicle": "UNAVAILABLE", "slot": "NOT_APPLICABLE"},
+    {"id": "STORE-E", "latitude": 31.207900, "longitude": 121.473700, "open": true, "supportsTestDrive": true, "vehicle": "AVAILABLE", "slot": "AVAILABLE"},
+    {"id": "STORE-C", "latitude": 31.216900, "longitude": 121.473700, "open": true, "supportsTestDrive": true, "vehicle": "AVAILABLE", "slot": "AVAILABLE"},
+    {"id": "STORE-A", "latitude": 31.234900, "longitude": 121.473700, "open": true, "supportsTestDrive": true, "vehicle": "AVAILABLE", "slot": "AVAILABLE"}
+  ]
+}

@@ -73,6 +73,21 @@
     </form>
   </section>
 
+  <section class="card" id="nearby-panel" hidden aria-labelledby="nearby-title">
+    <h2 id="nearby-title">模拟查询最近五家门店</h2>
+    <p class="hint">这里只演示距离和指定时段的虚构状态。位置仅用于本次查询；尚未提供客户选店或真实预约。管理员代录门店前仍需客户确认。</p>
+    <div class="row">
+      <label>位置纬度<input id="latitude" type="number" min="-90" max="90" step="any" value="31.2304" required></label>
+      <label>位置经度<input id="longitude" type="number" min="-180" max="180" step="any" value="121.4737" required></label>
+    </div>
+    <div class="actions">
+      <button id="locate" type="button" class="secondary">使用浏览器位置</button>
+      <button id="find-nearby" type="button">查询最近五家</button>
+    </div>
+    <p id="nearby-status" class="hint" role="status"></p>
+    <div id="nearby-list" aria-live="polite"></div>
+  </section>
+
   <section class="card" id="advice-panel" hidden aria-labelledby="advice-title">
     <h2 id="advice-title">3. 查看依据和候选建议</h2>
     <p class="hint">每次生成都会重新读取工单、模拟政策和顾问工作量。政策引用可在本仓库的 <code>data/policies/</code> 中核对。</p>
@@ -139,6 +154,7 @@
     $('task-state').textContent = current.state;
     $('task-version').textContent = String(current.version);
     $('supplement-panel').hidden = false;
+    $('nearby-panel').hidden = false;
     $('advice-panel').hidden = false;
   }
 
@@ -180,6 +196,47 @@
   }
 
   $('connect').addEventListener('click', connect);
+  $('locate').addEventListener('click', () => {
+    if (!navigator.geolocation) {
+      $('nearby-status').textContent = '浏览器不支持定位，请手动填写大致位置。';
+      return;
+    }
+    $('nearby-status').textContent = '正在请求浏览器定位授权……';
+    navigator.geolocation.getCurrentPosition(position => {
+      $('latitude').value = String(position.coords.latitude);
+      $('longitude').value = String(position.coords.longitude);
+      $('nearby-status').textContent = '位置已填入；点击查询最近五家。';
+    }, () => {
+      $('nearby-status').textContent = '未取得位置，可以手动填写大致位置。';
+    }, {timeout: 10000, maximumAge: 0});
+  });
+  $('find-nearby').addEventListener('click', async () => {
+    const button = $('find-nearby');
+    button.disabled = true;
+    $('nearby-list').replaceChildren();
+    $('nearby-status').textContent = '正在查询模拟门店……';
+    try {
+      if (!$('latitude').value || !$('longitude').value) {
+        throw new Error('请先填写位置，或使用浏览器定位。');
+      }
+      const options = await api('/api/agent/nearby-stores', 'POST', {
+        latitude: Number($('latitude').value), longitude: Number($('longitude').value),
+        modelCode: $('model-code').value.trim(),
+        appointmentAt: new Date($('appointment').value).toISOString()
+      });
+      const labels = {AVAILABLE: '模拟有车且时段空闲', NO_VEHICLE: '模拟无试驾车',
+        SLOT_FULL: '模拟时段已满', UNKNOWN: '模拟状态未知'};
+      for (const option of options) {
+        listItem($('nearby-list'), `${option.storeId} · 直线距离 ${option.distanceKm.toFixed(1)} km · ${labels[option.availability] || '状态未知'}`,
+          `模拟快照时间：${new Date(option.observedAt).toLocaleString('zh-CN')}；${option.selectable ? '可供客户考虑' : '当前不可选'}`);
+      }
+      $('nearby-status').textContent = '只展示距离最近的五家；此查询不会保存门店或创建预约。';
+    } catch (error) {
+      $('nearby-status').textContent = `查询失败：${error.message}`;
+    } finally {
+      button.disabled = false;
+    }
+  });
   $('create-form').addEventListener('submit', event => {
     event.preventDefault();
     act($('create'), async () => {
