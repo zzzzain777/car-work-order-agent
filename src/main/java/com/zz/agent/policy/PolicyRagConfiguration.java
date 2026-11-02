@@ -6,8 +6,13 @@ import com.zz.agent.integration.HttpCarSystemReadClient;
 import com.zz.agent.model.ModelTextGenerator;
 import com.zz.agent.workflow.AgentAdviceOrchestrator;
 import com.zz.agent.workflow.AgentTaskWorkflow;
+import com.zz.agent.workflow.AgentTaskCsrf;
+import com.zz.agent.workflow.AgentTaskCsrfFilter;
 import com.zz.agent.workflow.JdbcAgentTaskStore;
+import com.zz.agent.workflow.JdbcConfirmationStore;
 import com.zz.agent.workflow.ReadOnlyAdviceFlow;
+import com.zz.agent.workflow.SimulatedAssignmentPort;
+import com.zz.agent.workflow.SimulatedConfirmationFlow;
 import com.zz.agent.workflow.StructuredAdviceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,8 +98,16 @@ public class PolicyRagConfiguration {
     }
 
     @Bean
-    ApplicationRunner initializeAgentTaskTable(JdbcAgentTaskStore tasks) {
-        return args -> tasks.initializeSchema();
+    JdbcConfirmationStore jdbcConfirmationStore(JdbcTemplate policyJdbcTemplate) {
+        return new JdbcConfirmationStore(policyJdbcTemplate);
+    }
+
+    @Bean
+    ApplicationRunner initializeAgentTaskTable(JdbcAgentTaskStore tasks, JdbcConfirmationStore confirmations) {
+        return args -> {
+            tasks.initializeSchema();
+            confirmations.initializeSchema();
+        };
     }
 
     @Bean
@@ -124,5 +137,35 @@ public class PolicyRagConfiguration {
     @Profile("deepseek")
     AgentAdviceOrchestrator agentAdviceOrchestrator(AgentTaskWorkflow workflow, StructuredAdviceService advice) {
         return new AgentAdviceOrchestrator(workflow, advice);
+    }
+
+    @Bean
+    @Profile("deepseek & bailian-embedding")
+    AgentTaskCsrf agentTaskCsrf() {
+        return new AgentTaskCsrf(Clock.systemUTC());
+    }
+
+    @Bean
+    @Profile("deepseek & bailian-embedding")
+    AgentTaskCsrfFilter agentTaskCsrfFilter(AgentTaskCsrf csrf) {
+        return new AgentTaskCsrfFilter(csrf);
+    }
+
+    @Bean
+    @Profile("deepseek & bailian-embedding")
+    SimulatedAssignmentPort simulatedAssignmentPort() {
+        // 演示端固定拒绝；不能把只读业务系统接到真实分配。
+        return (cookie, workOrderId, advisorId) -> SimulatedAssignmentPort.Result.REJECTED;
+    }
+
+    @Bean
+    @Profile("deepseek & bailian-embedding")
+    SimulatedConfirmationFlow simulatedConfirmationFlow(CarSystemReadClient carSystem,
+                                                        ReadOnlyAdviceFlow readOnly,
+                                                        JdbcAgentTaskStore tasks,
+                                                        JdbcConfirmationStore confirmations,
+                                                        SimulatedAssignmentPort simulation) {
+        return new SimulatedConfirmationFlow(carSystem, readOnly, tasks, confirmations,
+                simulation, Clock.systemUTC());
     }
 }

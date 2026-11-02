@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>汽车工单 Agent · 本机演示</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, "PingFang SC", sans-serif; color: #17212b; background: #f4f6f8; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    header { background: #132b3a; color: white; padding: 28px 22px 34px; }
+    header .wrap, main { max-width: 920px; margin: auto; }
+    h1 { margin: 0 0 8px; font-size: clamp(25px, 4vw, 34px); letter-spacing: .02em; }
+    header p { color: #c8dbe5; margin: 0; line-height: 1.6; }
+    main { padding: 22px 18px 48px; display: grid; gap: 16px; }
+    .warning { background: #fff5dd; color: #614710; border: 1px solid #ebd296; border-radius: 12px; padding: 15px 18px; line-height: 1.6; }
+    .card { background: white; border: 1px solid #dde5e9; border-radius: 14px; padding: 20px; box-shadow: 0 5px 20px #2037470a; }
+    h2 { font-size: 19px; margin: 0 0 6px; }
+    .hint { color: #526575; font-size: 14px; line-height: 1.6; margin: 0 0 17px; }
+    .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; align-items: end; }
+    label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; }
+    input { width: 100%; min-height: 42px; padding: 9px 11px; border: 1px solid #aab9c3; border-radius: 8px; font: inherit; }
+    input:focus-visible, button:focus-visible { outline: 3px solid #64b6e6; outline-offset: 2px; }
+    button { min-height: 42px; padding: 9px 16px; border: 0; border-radius: 8px; background: #0c698f; color: white; font: inherit; font-weight: 650; cursor: pointer; }
+    button:hover:not(:disabled) { background: #085a7d; }
+    button:disabled { background: #bdc9d0; cursor: not-allowed; }
+    button.secondary { background: #e8eff3; color: #184258; }
+    button.secondary:hover:not(:disabled) { background: #d5e6ee; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    .notice { background: #e7f3f8; color: #1a526c; border-radius: 9px; padding: 12px 14px; line-height: 1.55; }
+    .error { background: #fff0ed; color: #9b2e20; }
+    dl { display: grid; grid-template-columns: max-content 1fr; gap: 7px 15px; margin: 12px 0 0; font-size: 14px; }
+    dt { color: #607282; } dd { margin: 0; overflow-wrap: anywhere; }
+    .item { border-top: 1px solid #e5ecef; padding: 12px 0; line-height: 1.6; overflow-wrap: anywhere; }
+    .item:first-child { border-top: 0; }
+    .source { display: block; color: #526575; font-size: 13px; margin-top: 4px; }
+    .pill { display: inline-block; background: #dceef6; color: #12506c; border-radius: 999px; padding: 3px 9px; font-size: 12px; font-weight: 700; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>汽车工单 Agent</h1>
+  <p>本机演示 · 从工单到有依据的建议，再到管理员模拟确认</p>
+</div></header>
+<main>
+  <div class="warning"><strong>这是模拟流程。</strong>门店政策是虚构资料，确认按钮不会调用 carSystem 的真实分配接口，也不代表已经预约或分配成功。</div>
+  <section class="card" aria-labelledby="session-title">
+    <h2 id="session-title">连接管理员会话</h2>
+    <p class="hint">先在同一台电脑用 <code>localhost:8080</code> 登录 carSystem 管理员，再从 <code>localhost:8091</code> 打开本页。两处请使用同一个主机名。</p>
+    <div id="session-status" class="notice" role="status">正在检查管理员会话……</div>
+    <div class="actions"><button id="connect" type="button" class="secondary">重新检查</button></div>
+  </section>
+
+  <section class="card" aria-labelledby="create-title">
+    <h2 id="create-title">1. 创建工单任务</h2>
+    <p class="hint">填写一条待分配的试驾工单编号。Agent 会从业务系统只读查询，补充信息保存在本项目中。</p>
+    <form id="create-form" class="row">
+      <label>工单编号<input id="order-id" type="number" min="1" step="1" required placeholder="例如 1001"></label>
+      <button id="create" type="submit" disabled>创建任务</button>
+    </form>
+    <dl id="task-summary" hidden><dt>任务编号</dt><dd id="task-id"></dd><dt>当前状态</dt><dd id="task-state"></dd><dt>任务版本</dt><dd id="task-version"></dd></dl>
+  </section>
+
+  <section class="card" id="supplement-panel" hidden aria-labelledby="supplement-title">
+    <h2 id="supplement-title">2. 补充客户已确认的信息</h2>
+    <p class="hint">门店和试驾时间只写入 Agent 任务，不改原始工单；此页不验证真实车源或预约时段。</p>
+    <form id="supplement-form" class="row">
+      <label>门店编号<input id="store-id" required maxlength="100" value="STORE-A"></label>
+      <label>车型编号<input id="model-code" required maxlength="100" value="MX-7"></label>
+      <label>计划试驾时间<input id="appointment" type="datetime-local" required value="2026-11-07T14:00"></label>
+      <button type="submit">保存补充信息</button>
+    </form>
+  </section>
+
+  <section class="card" id="advice-panel" hidden aria-labelledby="advice-title">
+    <h2 id="advice-title">3. 查看依据和候选建议</h2>
+    <p class="hint">每次生成都会重新读取工单、模拟政策和顾问工作量。政策引用可在本仓库的 <code>data/policies/</code> 中核对。</p>
+    <button id="recommend" type="button">刷新证据并生成建议</button>
+    <div id="advice-result" hidden>
+      <p id="advice-message" class="notice" role="status"></p>
+      <h3>政策依据</h3><div id="evidence-list"></div>
+      <h3>顾问工作量</h3><div id="advisor-list"></div>
+      <div id="proposal-box" hidden>
+        <p class="notice">建议等待管理员确认；只会调用固定拒绝的模拟分配端。<br>有效期至：<strong id="proposal-expiry"></strong></p>
+        <div class="actions"><button id="approve" type="button">批准模拟确认</button><button id="reject" type="button" class="secondary">拒绝建议</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" id="result-panel" hidden aria-labelledby="result-title">
+    <h2 id="result-title">4. 确认结果</h2>
+    <p id="result-text" class="notice" role="status"></p>
+  </section>
+</main>
+<script>
+  const $ = id => document.getElementById(id);
+  let token = null;
+  let task = null;
+  let proposal = null;
+
+  function showStatus(message, error = false) {
+    $('session-status').textContent = message;
+    $('session-status').className = error ? 'notice error' : 'notice';
+  }
+
+  async function api(path, method = 'GET', body = null) {
+    const headers = {};
+    if (method !== 'GET') {
+      headers['Content-Type'] = 'application/json';
+      headers['X-Agent-CSRF'] = token;
+    }
+    const response = await fetch(path, {
+      method, headers, credentials: 'same-origin', cache: 'no-store',
+      body: body === null ? undefined : JSON.stringify(body)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.message || data.detail || `请求失败（${response.status}）`);
+    return data;
+  }
+
+  async function connect() {
+    try {
+      const issued = await api('/api/agent/tasks/csrf');
+      token = issued.token;
+      $('create').disabled = false;
+      showStatus('管理员会话已通过检查，可以创建本机任务。');
+    } catch (error) {
+      token = null;
+      $('create').disabled = true;
+      showStatus(`无法连接：${error.message}。请先用 localhost 登录 carSystem，并启用演示所需配置组。`, true);
+    }
+  }
+
+  function renderTask(current) {
+    task = current;
+    $('task-summary').hidden = false;
+    $('task-id').textContent = current.id;
+    $('task-state').textContent = current.state;
+    $('task-version').textContent = String(current.version);
+    $('supplement-panel').hidden = false;
+    $('advice-panel').hidden = false;
+  }
+
+  function listItem(parent, text, source) {
+    const item = document.createElement('div');
+    item.className = 'item';
+    item.textContent = text;
+    if (source) {
+      const small = document.createElement('span');
+      small.className = 'source';
+      small.textContent = source;
+      item.appendChild(small);
+    }
+    parent.appendChild(item);
+  }
+
+  function renderAdvice(data) {
+    renderTask(data.task);
+    proposal = data.proposal;
+    $('advice-result').hidden = false;
+    $('advice-message').textContent = data.advice.message || data.preview.message;
+    $('evidence-list').replaceChildren();
+    for (const item of data.preview.policyEvidence || [])
+      listItem($('evidence-list'), item.text, item.sourceRef);
+    if (!data.preview.policyEvidence?.length) listItem($('evidence-list'), '没有可引用的政策依据，请人工核对。');
+    $('advisor-list').replaceChildren();
+    for (const advisor of data.preview.advisors || [])
+      listItem($('advisor-list'), `顾问 ${advisor.advisorId} · 处理中 ${advisor.processing} 单 · 总计 ${advisor.total} 单 · 门店归属未核实`);
+    if (!data.preview.advisors?.length) listItem($('advisor-list'), '没有可核对的顾问工作量。');
+    $('proposal-box').hidden = !proposal;
+    if (proposal) $('proposal-expiry').textContent = new Date(proposal.expiresAt).toLocaleString('zh-CN');
+  }
+
+  async function act(button, work) {
+    button.disabled = true;
+    try { await work(); }
+    catch (error) { showStatus(error.message, true); }
+    finally { button.disabled = false; }
+  }
+
+  $('connect').addEventListener('click', connect);
+  $('create-form').addEventListener('submit', event => {
+    event.preventDefault();
+    act($('create'), async () => {
+      const created = await api('/api/agent/tasks', 'POST', {workOrderId: Number($('order-id').value)});
+      renderTask(created);
+      proposal = null;
+      $('advice-result').hidden = true;
+      $('result-panel').hidden = true;
+      showStatus('任务已创建，请确认门店、车型和时间。');
+    });
+  });
+  $('supplement-form').addEventListener('submit', event => {
+    event.preventDefault();
+    act(event.submitter, async () => {
+      const updated = await api(`/api/agent/tasks/${task.id}/supplement`, 'POST', {
+        expectedVersion: task.version, storeId: $('store-id').value.trim(),
+        modelCode: $('model-code').value.trim(),
+        appointmentAt: new Date($('appointment').value).toISOString()
+      });
+      renderTask(updated);
+      proposal = null;
+      $('advice-result').hidden = true;
+      $('result-panel').hidden = true;
+      showStatus('补充信息已保存，可以刷新依据并生成建议。');
+    });
+  });
+  $('recommend').addEventListener('click', () => act($('recommend'), async () => {
+    showStatus('正在读取政策与工作量，并生成候选建议……');
+    renderAdvice(await api(`/api/agent/tasks/${task.id}/recommend`, 'POST', {expectedVersion: task.version}));
+    showStatus(proposal ? '建议已生成，等待管理员核对。' : '当前证据不足，请按提示人工核对。');
+  }));
+  async function decide(approve, button) {
+    await act(button, async () => {
+      const outcome = await api(`/api/agent/tasks/${task.id}/decision`, 'POST', {
+        proposalId: proposal.id, version: proposal.taskVersion, approve
+      });
+      $('result-panel').hidden = false;
+      $('result-text').textContent = approve
+        ? `模拟确认结果：${outcome.state}。观察：${outcome.observation || '无'}。真实 carSystem 工单未被分配。`
+        : '管理员已拒绝这条建议；未调用模拟分配端。';
+      $('proposal-box').hidden = true;
+      renderTask(await api(`/api/agent/tasks/${task.id}`));
+    });
+  }
+  $('approve').addEventListener('click', () => decide(true, $('approve')));
+  $('reject').addEventListener('click', () => decide(false, $('reject')));
+  connect();
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 # 模拟人工确认与结果未知处理
 
-日期：2026-11-02。这里验证的是 Java 内部流程和隔离 PostgreSQL 中的状态，不包含真实 `carSystem` 分配请求。生产应用没有注册真实分配端，也没有开放确认 HTTP 接口。
+日期：2026-11-02。这里验证的是 Java 内部流程和隔离 PostgreSQL 中的状态，不包含真实 `carSystem` 分配请求。后续加入的[本机演示入口](local-demo-entry.md)只接固定拒绝的模拟端；生产应用没有注册真实分配适配器。
 
 ## 已完成的流程
 
@@ -13,7 +13,7 @@
 
 ## 验证边界
 
-`SimulatedConfirmationProbeTest` 使用临时 PostgreSQL、固定政策及模拟业务端，覆盖正常确认、重复确认、并发确认、工单变化、政策原文变化、超时、超时后观察到目标状态、拒绝、过期、跨管理员访问和中断恢复。运行入口为 `bash probes/stage-1/java-pgvector-smoke.sh`。模拟端只存在于测试注入；代码中没有真实 `POST /api/workOrder/assign` 适配器。
+`SimulatedConfirmationProbeTest` 使用临时 PostgreSQL、固定政策及模拟业务端，覆盖正常确认、重复确认、并发确认、工单变化、政策原文变化、超时、超时后观察到目标状态、拒绝、过期、跨管理员访问和中断恢复。运行入口为 `bash probes/stage-1/java-pgvector-smoke.sh`。模拟端在隔离测试中注入可控结果；网页使用固定拒绝的模拟端。代码中没有真实 `POST /api/workOrder/assign` 适配器。
 
 2026-11-02 在 Java 21 容器中运行默认 Maven 测试：100 例、失败 0、错误 0、跳过 28（含需显式启用的数据库和外部模型测试）。另用临时 PostgreSQL 显式运行 23 例数据库探针：失败 0、错误 0、跳过 0；其中模拟确认 9 例。
 
