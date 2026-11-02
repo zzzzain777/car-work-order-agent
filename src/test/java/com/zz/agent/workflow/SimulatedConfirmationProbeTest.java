@@ -268,7 +268,7 @@ class SimulatedConfirmationProbeTest {
             StructuredAdviceService.Advice advice = new StructuredAdviceService.Advice(
                     StructuredAdviceService.Outcome.CANDIDATE, 301L, 1, 2,
                     List.of(new StructuredAdviceService.Citation(SOURCE, "工作日可以提交试驾申请")),
-                    "模拟建议", "advice-v1", "deepseek-flash", 20, 10);
+                    "模拟建议", "advice-v2", "deepseek-flash", 20, 10);
             return flow().publish(COOKIE, new AgentAdviceOrchestrator.Recommendation(ready, preview, advice))
                     .orElseThrow();
         }

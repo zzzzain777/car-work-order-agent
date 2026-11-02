@@ -25,6 +25,9 @@ class StructuredAdviceServiceTest {
     private static final String VALID_JSON = """
             {"advisorId":301,"citations":[{"sourceRef":"%s","quote":"工作日 10:00 至 17:00 接受试驾申请"}]}
             """.formatted(SOURCE);
+    private static final String DUPLICATE_SOURCE_JSON = """
+            {"advisorId":301,"citations":[{"sourceRef":"%s","quote":"工作日 10:00 至 17:00 接受试驾申请"},{"sourceRef":"%s","quote":"工作日 10:00 至 17:00 接受试驾申请"}]}
+            """.formatted(SOURCE, SOURCE);
 
     @Test
     void acceptsExactEvidenceAndBuildsSafeAdvisorSuggestion() {
@@ -46,7 +49,7 @@ class StructuredAdviceServiceTest {
         assertEquals("deepseek-flash", advice.modelId());
         assertEquals(120, advice.promptTokens());
         assertEquals(35, advice.completionTokens());
-        assertEquals("advice-v1", advice.promptVersion());
+        assertEquals("advice-v2", advice.promptVersion());
         assertTrue(advice.message().contains("核对顾问 301"));
         assertTrue(systemPrompt.get().contains("JSON"));
         assertTrue(userPrompt.get().contains(SOURCE));
@@ -98,6 +101,41 @@ class StructuredAdviceServiceTest {
             assertNull(advice.advisorId());
             assertTrue(advice.citations().isEmpty());
         }
+    }
+
+    @Test
+    void retriesOneMalformedCitationAndCountsBothModelCalls() {
+        AtomicInteger calls = new AtomicInteger();
+        StructuredAdviceService service = new StructuredAdviceService((system, user) ->
+                calls.incrementAndGet() == 1
+                        ? new StructuredAdviceService.Completion(DUPLICATE_SOURCE_JSON, "deepseek-flash", 100, 20)
+                        : new StructuredAdviceService.Completion(VALID_JSON, "deepseek-flash", 150, 30),
+                new ObjectMapper());
+
+        StructuredAdviceService.Advice advice = service.suggest(ready());
+
+        assertEquals(StructuredAdviceService.Outcome.CANDIDATE, advice.outcome());
+        assertEquals(2, calls.get());
+        assertEquals(250, advice.promptTokens());
+        assertEquals(50, advice.completionTokens());
+        assertEquals(1, advice.citations().size());
+    }
+
+    @Test
+    void stopsAfterOneRetryWhenCitationsRemainMalformed() {
+        AtomicInteger calls = new AtomicInteger();
+        StructuredAdviceService service = new StructuredAdviceService((system, user) -> {
+            calls.incrementAndGet();
+            return new StructuredAdviceService.Completion(DUPLICATE_SOURCE_JSON, "deepseek-flash", 100, 20);
+        }, new ObjectMapper());
+
+        StructuredAdviceService.Advice advice = service.suggest(ready());
+
+        assertEquals(StructuredAdviceService.Outcome.NEEDS_REVIEW, advice.outcome());
+        assertEquals(2, calls.get());
+        assertEquals(200, advice.promptTokens());
+        assertEquals(40, advice.completionTokens());
+        assertTrue(advice.citations().isEmpty());
     }
 
     @Test
