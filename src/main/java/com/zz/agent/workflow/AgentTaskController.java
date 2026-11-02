@@ -16,9 +16,11 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /** 本机演示入口；确认只调用模拟端，绝不提供真实分配能力。 */
 @RestController
@@ -41,6 +43,7 @@ public final class AgentTaskController {
 
     public record RecommendationOutput(JdbcAgentTaskStore.Task task, ReadOnlyAdviceFlow.Result preview,
                                        StructuredAdviceService.Advice advice,
+                                       JdbcAdviceRunStore.Run run,
                                        JdbcConfirmationStore.Proposal proposal, boolean simulated) {
     }
 
@@ -49,15 +52,17 @@ public final class AgentTaskController {
 
     private final AgentTaskWorkflow workflow;
     private final AgentAdviceOrchestrator orchestrator;
+    private final JdbcAdviceRunStore runs;
     private final SimulatedConfirmationFlow confirmations;
     private final AgentTaskCsrf csrf;
     private final CarSystemReadClient carSystem;
 
     public AgentTaskController(AgentTaskWorkflow workflow, AgentAdviceOrchestrator orchestrator,
-                               SimulatedConfirmationFlow confirmations, AgentTaskCsrf csrf,
+                               JdbcAdviceRunStore runs, SimulatedConfirmationFlow confirmations, AgentTaskCsrf csrf,
                                CarSystemReadClient carSystem) {
         this.workflow = Objects.requireNonNull(workflow, "任务流程不能为空");
         this.orchestrator = Objects.requireNonNull(orchestrator, "建议流程不能为空");
+        this.runs = Objects.requireNonNull(runs, "建议运行记录不能为空");
         this.confirmations = Objects.requireNonNull(confirmations, "模拟确认流程不能为空");
         this.csrf = Objects.requireNonNull(csrf, "令牌服务不能为空");
         this.carSystem = Objects.requireNonNull(carSystem, "业务系统只读客户端不能为空");
@@ -98,6 +103,15 @@ public final class AgentTaskController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "任务不存在")));
     }
 
+    @GetMapping("/{taskId}/runs")
+    public ResponseEntity<List<JdbcAdviceRunStore.Run>> runs(
+            @RequestHeader(value = HttpHeaders.COOKIE, required = false) String cookieHeader,
+            @PathVariable UUID taskId) {
+        JdbcAgentTaskStore.Task task = workflow.find(cookieHeader, taskId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "任务不存在"));
+        return noStore(runs.recent(task.id(), task.adminId()));
+    }
+
     @GetMapping("/{taskId}/pending-proposal")
     public ResponseEntity<JdbcConfirmationStore.Proposal> pendingProposal(
             @RequestHeader(value = HttpHeaders.COOKIE, required = false) String cookieHeader,
@@ -126,9 +140,13 @@ public final class AgentTaskController {
         if (input == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "请提供任务版本");
         }
+        long startedAt = System.nanoTime();
         AgentAdviceOrchestrator.Recommendation recommendation = orchestrator
                 .refreshAndSuggest(cookieHeader, taskId, input.expectedVersion())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "任务版本已变化"));
+        long elapsedMs = Math.max(0, TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt));
+        JdbcAdviceRunStore.Run run = runs.record(recommendation.task(), recommendation.advice(), elapsedMs)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "建议运行期间任务版本已变化"));
         JdbcConfirmationStore.Proposal proposal = null;
         if (recommendation.advice().outcome() == StructuredAdviceService.Outcome.CANDIDATE) {
             proposal = confirmations.publish(cookieHeader, recommendation)
@@ -138,7 +156,7 @@ public final class AgentTaskController {
                 : workflow.find(cookieHeader, taskId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "提案已变化"));
         return noStore(new RecommendationOutput(current, recommendation.preview(),
-                recommendation.advice(), proposal, true));
+                recommendation.advice(), run, proposal, true));
     }
 
     @PostMapping("/{taskId}/decision")

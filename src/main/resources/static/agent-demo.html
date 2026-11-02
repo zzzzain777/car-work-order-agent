@@ -95,6 +95,7 @@
     <button id="recommend" type="button">刷新证据并生成建议</button>
     <div id="advice-result" hidden>
       <p id="advice-message" class="notice" role="status"></p>
+      <p id="run-metrics" class="hint"></p>
       <h3>政策检索候选与建议引用</h3><div id="evidence-list"></div>
       <h3>顾问工作量</h3><div id="advisor-list"></div>
       <div id="proposal-box" hidden>
@@ -164,6 +165,12 @@
           renderTask(current);
           proposal = null;
           $('advice-result').hidden = true;
+          try {
+            const runs = await api(`/api/agent/tasks/${encodeURIComponent(taskId)}/runs`);
+            renderRunMetrics(runs[0]);
+          } catch (_) {
+            renderRunMetrics(null);
+          }
           if (current.state === 'AWAITING_CONFIRMATION') {
             renderRestoredProposal(current, await api(`/api/agent/tasks/${encodeURIComponent(taskId)}/pending-proposal`));
           }
@@ -221,11 +228,18 @@
     parent.appendChild(item);
   }
 
+  function renderRunMetrics(run) {
+    $('run-metrics').textContent = run
+      ? `本次建议请求耗时 ${run.requestElapsedMs} 毫秒（含只读查询和模型调用） · 模型 ${run.modelId || '未报告'} · 输入 ${run.promptTokens} Token · 输出 ${run.completionTokens} Token · 提示词 ${run.promptVersion}。Token 为 0 时可能是服务商未报告，不能当作零成本。`
+      : '本次建议没有可读取的运行指标。';
+  }
+
   function renderAdvice(data) {
     renderTask(data.task);
     proposal = data.proposal;
     $('advice-result').hidden = false;
     $('advice-message').textContent = data.advice.message || data.preview.message;
+    renderRunMetrics(data.run);
     $('evidence-list').replaceChildren();
     for (const item of data.preview.policyEvidence || []) {
       const citation = (data.advice.citations || []).find(row => row.sourceRef === item.sourceRef);

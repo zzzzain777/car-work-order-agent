@@ -13,6 +13,7 @@ import com.zz.agent.workflow.AgentTaskWorkflow;
 import com.zz.agent.workflow.AgentTaskCsrf;
 import com.zz.agent.workflow.AgentTaskCsrfFilter;
 import com.zz.agent.workflow.JdbcAgentTaskStore;
+import com.zz.agent.workflow.JdbcAdviceRunStore;
 import com.zz.agent.workflow.JdbcConfirmationStore;
 import com.zz.agent.workflow.ReadOnlyAdviceFlow;
 import com.zz.agent.workflow.SimulatedAssignmentPort;
@@ -130,10 +131,17 @@ public class PolicyRagConfiguration {
     }
 
     @Bean
-    ApplicationRunner initializeAgentTaskTable(JdbcAgentTaskStore tasks, JdbcConfirmationStore confirmations) {
+    JdbcAdviceRunStore jdbcAdviceRunStore(JdbcTemplate policyJdbcTemplate) {
+        return new JdbcAdviceRunStore(policyJdbcTemplate);
+    }
+
+    @Bean
+    ApplicationRunner initializeAgentTaskTable(JdbcAgentTaskStore tasks, JdbcConfirmationStore confirmations,
+                                               JdbcAdviceRunStore runs) {
         return args -> {
             tasks.initializeSchema();
             confirmations.initializeSchema();
+            runs.initializeSchema();
         };
     }
 

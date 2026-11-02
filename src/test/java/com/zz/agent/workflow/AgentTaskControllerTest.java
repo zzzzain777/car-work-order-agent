@@ -13,8 +13,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -118,6 +120,10 @@ class AgentTaskControllerTest {
         JdbcConfirmationStore.Proposal proposal = new JdbcConfirmationStore.Proposal(
                 proposalId, taskId, 3, 301, "0".repeat(64), CLOCK.instant().plusSeconds(600));
         when(fixture.orchestrator.refreshAndSuggest(COOKIE, taskId, 1)).thenReturn(Optional.of(result));
+        JdbcAdviceRunStore.Run run = new JdbcAdviceRunStore.Run(UUID.randomUUID(), taskId, 2,
+                "CANDIDATE", StructuredAdviceService.PROMPT_VERSION, "deepseek-flash",
+                10, 5, 123, null, CLOCK.instant());
+        when(fixture.runs.record(eq(ready), eq(advice), anyLong())).thenReturn(Optional.of(run));
         when(fixture.confirmations.publish(COOKIE, result)).thenReturn(Optional.of(proposal));
         when(fixture.workflow.find(COOKIE, taskId)).thenReturn(Optional.of(awaiting));
 
@@ -130,7 +136,31 @@ class AgentTaskControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.task.version").value(3))
                 .andExpect(jsonPath("$.task.state").value("AWAITING_CONFIRMATION"))
+                .andExpect(jsonPath("$.run.requestElapsedMs").value(123))
+                .andExpect(jsonPath("$.run.promptTokens").value(10))
                 .andExpect(jsonPath("$.proposal.id").value(proposalId.toString()));
+        verify(fixture.runs).record(eq(ready), eq(advice), anyLong());
+    }
+
+    @Test
+    void runHistoryRequiresTheTaskOwnerAdministrator() throws Exception {
+        Fixture fixture = fixture();
+        UUID taskId = UUID.randomUUID();
+        JdbcAgentTaskStore.Task task = task(taskId);
+        JdbcAdviceRunStore.Run run = new JdbcAdviceRunStore.Run(UUID.randomUUID(), taskId, 0,
+                "NEEDS_REVIEW", StructuredAdviceService.PROMPT_VERSION, null,
+                0, 0, 85, null, CLOCK.instant());
+        when(fixture.workflow.find(COOKIE, taskId)).thenReturn(Optional.of(task));
+        when(fixture.workflow.find(null, taskId)).thenThrow(new SecurityException());
+        when(fixture.runs.recent(taskId, task.adminId())).thenReturn(List.of(run));
+
+        fixture.mvc.perform(get("/api/agent/tasks/{id}/runs", taskId).header("Cookie", COOKIE))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$[0].outcome").value("NEEDS_REVIEW"))
+                .andExpect(jsonPath("$[0].requestElapsedMs").value(85));
+        fixture.mvc.perform(get("/api/agent/tasks/{id}/runs", taskId))
+                .andExpect(status().isForbidden());
     }
 
     private static JdbcAgentTaskStore.Task task(UUID id) {
@@ -142,11 +172,13 @@ class AgentTaskControllerTest {
     private static Fixture fixture() {
         AgentTaskWorkflow workflow = mock(AgentTaskWorkflow.class);
         AgentAdviceOrchestrator orchestrator = mock(AgentAdviceOrchestrator.class);
+        JdbcAdviceRunStore runs = mock(JdbcAdviceRunStore.class);
         SimulatedConfirmationFlow confirmations = mock(SimulatedConfirmationFlow.class);
         CarSystemReadClient car = mock(CarSystemReadClient.class);
         when(car.currentUser(COOKIE)).thenReturn(new CarSystemReadClient.Identity(9001, 2, 0));
         AgentTaskCsrf csrf = new AgentTaskCsrf(CLOCK);
-        AgentTaskController controller = new AgentTaskController(workflow, orchestrator, confirmations, csrf, car);
+        AgentTaskController controller = new AgentTaskController(workflow, orchestrator, runs,
+                confirmations, csrf, car);
         MockMvc mvc = MockMvcBuilders.standaloneSetup(controller)
                 .addFilters(new AgentTaskCsrfFilter(csrf))
                 .defaultRequest(get("/").with(request -> {
@@ -154,10 +186,11 @@ class AgentTaskControllerTest {
                     request.setServerPort(8091);
                     return request;
                 })).build();
-        return new Fixture(workflow, orchestrator, confirmations, csrf, mvc);
+        return new Fixture(workflow, orchestrator, runs, confirmations, csrf, mvc);
     }
 
     private record Fixture(AgentTaskWorkflow workflow, AgentAdviceOrchestrator orchestrator,
+                           JdbcAdviceRunStore runs,
                            SimulatedConfirmationFlow confirmations,
                            AgentTaskCsrf csrf, MockMvc mvc) {
     }

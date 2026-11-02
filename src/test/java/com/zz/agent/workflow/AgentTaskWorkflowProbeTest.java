@@ -119,7 +119,7 @@ class AgentTaskWorkflowProbeTest {
             modelCalls.incrementAndGet();
             return new StructuredAdviceService.Completion("""
                     {"advisorId":301,"citations":[{"sourceRef":"data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1",
-                    "quote":"工作日可以提交试驾申请"}]}
+                    "quote":"工作日 10:00 至 17:00 可以提交试驾申请"}]}
                     """, "deepseek-flash", 20, 10);
         }, new ObjectMapper());
         AgentAdviceOrchestrator orchestrator = new AgentAdviceOrchestrator(workflow, advice);
@@ -171,7 +171,7 @@ class AgentTaskWorkflowProbeTest {
                 PolicyEvidenceGate.Outcome.CANDIDATES,
                 List.of(new PolicyEvidenceGate.Evidence("chunk-1", "POL-A", 1,
                         "data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1",
-                        "模拟政策原文：工作日可以提交试驾申请。")));
+                        "模拟政策原文：工作日 10:00 至 17:00 可以提交试驾申请。")));
         int calls;
 
         @Override
