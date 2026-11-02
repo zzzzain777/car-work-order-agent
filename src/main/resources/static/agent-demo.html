@@ -47,7 +47,7 @@
   <div class="warning"><strong>这是模拟流程。</strong>门店政策是虚构资料，确认按钮不会调用 carSystem 的真实分配接口，也不代表已经预约或分配成功。</div>
   <section class="card" aria-labelledby="session-title">
     <h2 id="session-title">连接管理员会话</h2>
-    <p class="hint">先在同一台电脑用 <code>localhost:8080</code> 登录 carSystem 管理员，再从 <code>localhost:8091</code> 打开本页。两处请使用同一个主机名。</p>
+    <p class="hint">请在同一个浏览器中打开 <a href="http://localhost:8080/api/index.html" target="_blank" rel="noopener">carSystem 登录页</a>，登录管理员后回到本页点击“重新检查”。两处都要使用 <code>localhost</code>。</p>
     <div id="session-status" class="notice" role="status">正在检查管理员会话……</div>
     <div class="actions"><button id="connect" type="button" class="secondary">重新检查</button></div>
   </section>
@@ -128,7 +128,7 @@
     } catch (error) {
       token = null;
       $('create').disabled = true;
-      showStatus(`无法连接：${error.message}。请先用 localhost 登录 carSystem，并启用演示所需配置组。`, true);
+      showStatus(`无法连接：${error.message}。请在同一个浏览器登录 carSystem 管理员后重新检查。`, true);
     }
   }
 
