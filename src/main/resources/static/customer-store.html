@@ -62,7 +62,7 @@
         <label>位置纬度<input id="latitude" type="number" min="-90" max="90" step="any" value="31.2304" required></label>
         <label>位置经度<input id="longitude" type="number" min="-180" max="180" step="any" value="121.4737" required></label>
         <label>车型编号<input id="model-code" value="MX-7" required></label>
-        <label>希望试驾的时间<input id="appointment" type="datetime-local" value="2026-11-07T14:00" required></label>
+        <label>希望试驾的时间（北京时间）<input id="appointment" type="datetime-local" value="2026-11-07T14:00" required></label>
       </div>
       <div class="actions"><button id="locate" type="button">使用浏览器位置</button><button id="find" type="submit">查询最近五家</button></div>
     </form>
@@ -72,6 +72,14 @@
 </main>
 <script>
   const $ = id => document.getElementById(id);
+
+  function beijingAppointmentAt() {
+    const value = $('appointment').value;
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(value)) {
+      throw new Error('请填写准确的北京时间');
+    }
+    return `${value}${value.length === 16 ? ':00' : ''}+08:00`;
+  }
   let csrf = null;
   let task = null;
   let offer = null;
@@ -177,7 +185,7 @@
         expectedVersion: current.version,
         latitude: Number($('latitude').value), longitude: Number($('longitude').value),
         modelCode: $('model-code').value.trim(),
-        appointmentAt: new Date($('appointment').value).toISOString()
+        appointmentAt: beijingAppointmentAt()
       }));
       message('已显示最近五家。可用状态属于模拟数据，请在十分钟内选择。');
     } catch (error) {
