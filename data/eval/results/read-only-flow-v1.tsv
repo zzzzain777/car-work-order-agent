@@ -1,6 +1,6 @@
 # scope=read-only-flow-offline-v1
 # fixtureSha256=0a8c48378d762b0f16bac6f1e00841f33b3d47273cb7f6bae1ecd449e19f910e
-# corpusSha256=c86dc001bb57f7d347021a3075ce8b2cb5945f91471b669c80a38cd4de5c0ed4
+# corpusSha256=c3b25bf86ddfed947478a6fbc87734f27d415f1a5271e19a4c416e09f20b2c57
 caseId	expectedStage	actualStage	expectedPolicyOutcome	actualPolicyOutcome	expectedSourceRefs	actualSourceRefs	expectedAdvisorIds	actualAdvisorIds	missingFields	orderCalls	policyCalls	advisorCalls	workloadCalls	assignmentEnabled	pass
 C01	READY_FOR_ADMIN_REVIEW	READY_FOR_ADMIN_REVIEW	CANDIDATES	CANDIDATES	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	301|302	301|302	-	1	1	1	1	false	PASS
 C03	NEEDS_INPUT	NEEDS_INPUT	NOT_CALLED	NOT_CALLED	-	-	-	-	appointmentAt	1	0	0	0	false	PASS

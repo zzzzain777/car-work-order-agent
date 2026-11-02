@@ -1,6 +1,6 @@
 # scope=draft-policy-retrieval-only
 # casesSha256=8a9f996e68b99b9936e2a892065f1db0666c36ed9a071a6250c2cc7a51f46750
-# corpusSha256=c86dc001bb57f7d347021a3075ce8b2cb5945f91471b669c80a38cd4de5c0ed4
+# corpusSha256=c3b25bf86ddfed947478a6fbc87734f27d415f1a5271e19a4c416e09f20b2c57
 caseId	expectedStatus	actualStatus	expectedPolicyIds	actualPolicyIds	expectedSourceRefs	actualSourceRefs	rankedHits	pass
 C01	MATCHES	MATCHES	POL-STORE-A-MX-7-TEST	POL-STORE-A-MX-7-TEST	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	POL-STORE-A-MX-7-TEST@1#chunk-1:5	PASS
 C04	MATCHES	MATCHES	POL-STORE-A-MX-7-TEST	POL-STORE-A-MX-7-TEST	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	POL-STORE-A-MX-7-TEST@1#chunk-1:6	PASS

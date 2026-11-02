@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** 仅显式开启时连接本地数据库和百炼免费向量模型。 */
 @EnabledIfSystemProperty(named = "policy.rag.live", matches = "true")
@@ -105,6 +106,40 @@ class PolicyRagLiveIntegrationTest {
         }
         report.append("# 逐例通过=").append(passed).append('/').append(lines.size() - 1).append('\n');
         Path output = Path.of("target/eval/policy-rag-holdout-v1.tsv");
+        Files.createDirectories(output.getParent());
+        Files.writeString(output, report.toString(), StandardCharsets.UTF_8);
+        assertEquals(lines.size() - 1, passed, "逐例结果见 " + output);
+    }
+
+    @Test
+    void ranksTwoRulesFromTheSamePolicyWithRealEmbeddings() throws Exception {
+        List<String> lines = Files.readAllLines(Path.of("data/eval/retrieval/rag-ranking-v1.tsv"),
+                StandardCharsets.UTF_8);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        StringBuilder report = new StringBuilder("案例\t预期首条出处\t实际首条出处\t返回片段数\t通过\n");
+        int passed = 0;
+        for (String line : lines.subList(1, lines.size())) {
+            if (line.isBlank()) continue;
+            String[] cells = line.split("\t", -1);
+            assertEquals(6, cells.length, cells[0]);
+            ResponseEntity<JsonNode> response = rest.postForEntity("/api/policies/search",
+                    new HttpEntity<>(new PolicySearchRequest(cells[1], cells[2],
+                            OffsetDateTime.parse(cells[3]), cells[4]), headers), JsonNode.class);
+            assertEquals(200, response.getStatusCode().value(), cells[0]);
+            JsonNode body = response.getBody();
+            assertNotNull(body, cells[0]);
+            assertEquals("CANDIDATES", body.path("outcome").asText(), cells[0]);
+            JsonNode evidence = body.path("evidence");
+            assertTrue(evidence.size() >= 2, "同范围应有多个候选片段：" + cells[0]);
+            String actualTop = evidence.path(0).path("sourceRef").asText();
+            boolean pass = cells[5].equals(actualTop);
+            if (pass) passed++;
+            report.append(String.join("\t", cells[0], cells[5], actualTop,
+                    String.valueOf(evidence.size()), pass ? "通过" : "失败")).append('\n');
+        }
+        report.append("# 首条命中=").append(passed).append('/').append(lines.size() - 1).append('\n');
+        Path output = Path.of("target/eval/policy-rag-ranking-v1.tsv");
         Files.createDirectories(output.getParent());
         Files.writeString(output, report.toString(), StandardCharsets.UTF_8);
         assertEquals(lines.size() - 1, passed, "逐例结果见 " + output);

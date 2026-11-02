@@ -1,0 +1,3 @@
+caseId	storeId	modelCode	appointmentAt	question	expectedTopSourceRef
+R01	STORE-C	MX-7	2026-11-07T14:00:00+08:00	STORE-C 的 MX-7 下午两点能申请试驾吗，开放时间是几点到几点	data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1
+R02	STORE-C	MX-7	2026-11-07T14:00:00+08:00	STORE-C 的 MX-7 试驾要改期，至少需要提前多久联系门店	data/policies/STORE-C-MX-7-test-drive-v1.md#rule-2
