@@ -1,8 +1,8 @@
 # 汽车工单智能处置 Agent
 
-目前已有[模拟附近五店可用性查询](docs/verification/stage-1/nearby-store-availability.md)和[客户本人选店流程](docs/verification/stage-1/customer-store-selection.md)：客户可从最近五家中选择模拟有车且时段空闲的门店，结果只保存在 Agent 任务中。
+目前已有[模拟附近五店可用性查询](docs/verification/stage-1/nearby-store-availability.md)和[客户本人选店流程](docs/verification/stage-1/customer-store-selection.md)：客户可从最近五家中选择模拟有车且时段空闲的门店，结果只保存在 Agent 任务中。[简历演示验收单](docs/verification/stage-1/resume-demo-acceptance.md)列出可复现步骤和证据边界。
 
-这是独立的 Java 21 / Spring Boot 项目。目前有可启动的应用骨架、健康检查、阶段 0 技术探针、DeepSeek 的框架接线及一次真实短文本联通结果、基于模拟门店的纯 Java“最近五家”筛选、管理员确认前的纯规则判断、模拟政策向量检索，以及工单与顾问数据的**只读建议预览**。Agent 自有的[任务持久化能力](docs/verification/stage-1/durable-agent-task.md)已与[只读预览内部流程](docs/verification/stage-1/task-preview-wiring.md)接通，并有[模型结构化建议与引用核验](docs/verification/stage-1/structured-advice.md)、[模拟人工确认](docs/verification/stage-1/simulated-confirmation.md)和[本机操作页](docs/verification/stage-1/local-demo-entry.md)。`GET /api/agent/preview` 仍是独立的无任务只读接口；本机操作页使用新的任务接口，最终只调用模拟分配端。客户选店已有模拟数据下的代码与隔离测试；真实客户浏览器联调和真实分配尚未完成。[第一版设计](docs/superpowers/specs/2026-10-20-car-work-order-agent-design.md)和[阶段 0 决策](docs/verification/stage-0/decision.md)记录了边界与未通过的联调门槛。
+这是独立的 Java 21 / Spring Boot 项目。目前有可启动的应用骨架、健康检查、阶段 0 技术探针、DeepSeek 的框架接线及一次真实短文本联通结果、基于模拟门店的纯 Java“最近五家”筛选、管理员确认前的纯规则判断、模拟政策向量检索，以及工单与顾问数据的**只读建议预览**。Agent 自有的[任务持久化能力](docs/verification/stage-1/durable-agent-task.md)已与[只读预览内部流程](docs/verification/stage-1/task-preview-wiring.md)接通，并有[模型结构化建议与引用核验](docs/verification/stage-1/structured-advice.md)、[模拟人工确认](docs/verification/stage-1/simulated-confirmation.md)和[本机操作页](docs/verification/stage-1/local-demo-entry.md)。`GET /api/agent/preview` 仍是独立的无任务只读接口；本机操作页使用新的任务接口，最终只调用模拟分配端。客户选店已有隔离测试及本机双身份联调；真实分配尚未完成。[第一版设计](docs/superpowers/specs/2026-10-20-car-work-order-agent-design.md)和[阶段 0 决策](docs/verification/stage-0/decision.md)记录了边界与未通过的联调门槛。
 
 ## 在 IDEA 中运行
 
@@ -16,7 +16,7 @@
 7. 任务表和提案表会在 `policy-rag` 启动时初始化。隔离数据库测试可执行 `bash probes/stage-1/java-pgvector-smoke.sh`；[任务持久化记录](docs/verification/stage-1/durable-agent-task.md)列出已覆盖的版本与隔离规则。
 8. 同时启用 `policy-rag,deepseek,bailian-embedding`，从项目根目录启动应用后，在浏览器打开 `http://localhost:8091/agent-demo.html`。先在**同一个浏览器**打开 `http://localhost:8080/api/index.html` 登录本机 `carSystem` 管理员；两页都使用 `localhost`，再回演示页点击“重新检查”。Chrome 与应用内浏览器的 Cookie 不共享。页面会依次创建任务、补充信息、显示政策和顾问依据、生成模型候选并做**模拟确认**；写入要求同源 Origin 和会话绑定的 CSRF Token。需要已有的 DeepSeek、百炼和本地数据库配置；详见[操作页记录](docs/verification/stage-1/local-demo-entry.md)。
 9. [模拟人工确认](docs/verification/stage-1/simulated-confirmation.md)的提案有效期 10 分钟，确认时复查管理员、工单、政策和顾问，持久化一次性尝试；模拟分配超时只复读工单并保持“结果未知”。网页接入的模拟端固定返回“拒绝”且绝不改 `carSystem`。正常成功、超时和并发结果由隔离测试验证，不能把网页操作算作真实分配联调。
-10. 客户选店时，管理员创建任务后把任务链接交给**原工单客户本人**。客户在同一个浏览器登录 `carSystem` 普通客户账号，打开 `http://localhost:8091/customer-store.html`，核对工单归属后查看五家模拟门店并选择。只写 Agent 任务；需要已有的三组 Profile 和数据库配置。接口、权限及未联调部分见[客户选店记录](docs/verification/stage-1/customer-store-selection.md)。
+10. 客户选店时，管理员创建任务后把任务链接交给**原工单客户本人**。客户在同一个浏览器登录 `carSystem` 普通客户账号，打开 `http://localhost:8091/customer-store.html`，核对工单归属后查看五家模拟门店并选择。只写 Agent 任务；需要已有的三组 Profile 和数据库配置。接口、权限、联调结果和剩余边界见[客户选店记录](docs/verification/stage-1/customer-store-selection.md)。
 
 Java 21 + Spring Boot 3.5.8 是当前**可启动骨架**的版本；pgvector 已有[隔离 SQL 探针](docs/verification/stage-0/pgvector-probe.md)和[无 Key 的 Java 接线探针](docs/verification/stage-1/java-pgvector-probe.md)。DeepSeek 的 `deepseek-flash` 完成了一次真实短文本联通；百炼的 `qwen3.7-text-embedding-flash` 已与本地 pgvector 跑通模拟政策检索。真实管理员浏览器能读取证据并写入 Agent 任务；重新编译后的本机 `carSystem` 已通过[账号降级和封禁后的旧会话复测](docs/verification/stage-1/session-revocation-retest.md)，但该下游修改尚未提交，且工单快照与顾问门店归属等门槛未完成，真实分配继续关闭。[联调记录](docs/verification/stage-1/local-demo-entry.md)保留了旧运行版本的失败案例。
 
