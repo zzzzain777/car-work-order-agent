@@ -5,6 +5,7 @@ import com.zz.agent.integration.CarSystemReadClient;
 import com.zz.agent.integration.HttpCarSystemReadClient;
 import com.zz.agent.model.ModelTextGenerator;
 import com.zz.agent.store.NearbyStoreAvailabilityService;
+import com.zz.agent.store.CustomerStoreSelectionService;
 import com.zz.agent.store.NearbyStoreSelector;
 import com.zz.agent.store.SimulatedStoreCatalog;
 import com.zz.agent.workflow.AgentAdviceOrchestrator;
@@ -102,6 +103,15 @@ public class PolicyRagConfiguration {
     NearbyStoreAvailabilityService nearbyStoreAvailabilityService(SimulatedStoreCatalog catalog) {
         return new NearbyStoreAvailabilityService(new NearbyStoreSelector(),
                 catalog.stores(), catalog, Clock.systemUTC());
+    }
+
+    @Bean
+    @Profile("deepseek & bailian-embedding")
+    CustomerStoreSelectionService customerStoreSelectionService(CarSystemReadClient carSystem,
+                                                                 JdbcAgentTaskStore tasks,
+                                                                 NearbyStoreAvailabilityService nearby,
+                                                                 SimulatedStoreCatalog catalog) {
+        return new CustomerStoreSelectionService(carSystem, tasks, nearby, catalog, Clock.systemUTC());
     }
 
     @Bean

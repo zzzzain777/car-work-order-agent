@@ -16,7 +16,11 @@ public interface CarSystemReadClient {
     record Identity(long id, int userRole, int userStatus) {
     }
 
-    record WorkOrder(long id, int type, int status, Long advisorId, String updateTime) {
+    record WorkOrder(long id, int type, int status, Long advisorId, String updateTime,
+                     Long customerId) {
+        public WorkOrder(long id, int type, int status, Long advisorId, String updateTime) {
+            this(id, type, status, advisorId, updateTime, null);
+        }
     }
 
     record Advisor(long id, String name, int userRole, int userStatus) {

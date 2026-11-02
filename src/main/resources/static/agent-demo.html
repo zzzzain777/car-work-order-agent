@@ -59,7 +59,8 @@
       <label>工单编号<input id="order-id" type="number" min="1" step="1" required placeholder="例如 1001"></label>
       <button id="create" type="submit" disabled>创建任务</button>
     </form>
-    <dl id="task-summary" hidden><dt>任务编号</dt><dd id="task-id"></dd><dt>当前状态</dt><dd id="task-state"></dd><dt>任务版本</dt><dd id="task-version"></dd></dl>
+    <dl id="task-summary" hidden><dt>任务编号</dt><dd id="task-id"></dd><dt>当前状态</dt><dd id="task-state"></dd><dt>任务版本</dt><dd id="task-version"></dd><dt>客户选店入口</dt><dd><a id="customer-link" href="/customer-store.html" target="_blank" rel="noopener">打开客户页面</a>（需由原工单客户本人登录）</dd></dl>
+    <div id="task-actions" class="actions" hidden><button id="refresh-task" type="button" class="secondary">刷新任务，查看客户选择</button></div>
   </section>
 
   <section class="card" id="supplement-panel" hidden aria-labelledby="supplement-title">
@@ -75,7 +76,7 @@
 
   <section class="card" id="nearby-panel" hidden aria-labelledby="nearby-title">
     <h2 id="nearby-title">模拟查询最近五家门店</h2>
-    <p class="hint">这里只演示距离和指定时段的虚构状态。位置仅用于本次查询；尚未提供客户选店或真实预约。管理员代录门店前仍需客户确认。</p>
+    <p class="hint">这里只演示距离和指定时段的虚构状态。位置仅用于本次查询；客户本人选择请使用上方的客户入口。管理员代录门店前仍需客户确认。</p>
     <div class="row">
       <label>位置纬度<input id="latitude" type="number" min="-90" max="90" step="any" value="31.2304" required></label>
       <label>位置经度<input id="longitude" type="number" min="-180" max="180" step="any" value="121.4737" required></label>
@@ -150,9 +151,15 @@
   function renderTask(current) {
     task = current;
     $('task-summary').hidden = false;
+    $('task-actions').hidden = false;
     $('task-id').textContent = current.id;
     $('task-state').textContent = current.state;
     $('task-version').textContent = String(current.version);
+    $('customer-link').href = `/customer-store.html?taskId=${encodeURIComponent(current.id)}`;
+    if (current.supplement?.storeId) $('store-id').value = current.supplement.storeId;
+    if (current.supplement?.modelCode) $('model-code').value = current.supplement.modelCode;
+    if (current.supplement?.appointmentAt)
+      $('appointment').value = current.supplement.appointmentAt.slice(0, 16);
     $('supplement-panel').hidden = false;
     $('nearby-panel').hidden = false;
     $('advice-panel').hidden = false;
@@ -196,6 +203,13 @@
   }
 
   $('connect').addEventListener('click', connect);
+  $('refresh-task').addEventListener('click', () => act($('refresh-task'), async () => {
+    renderTask(await api(`/api/agent/tasks/${task.id}`));
+    proposal = null;
+    $('advice-result').hidden = true;
+    showStatus(task.storeChoice ? `客户已选择 ${task.supplement.storeId}；可刷新依据。`
+      : '任务已刷新；如为管理员代录，请确认客户意愿。');
+  }));
   $('locate').addEventListener('click', () => {
     if (!navigator.geolocation) {
       $('nearby-status').textContent = '浏览器不支持定位，请手动填写大致位置。';

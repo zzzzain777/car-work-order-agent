@@ -1,13 +1,16 @@
 package com.zz.agent.workflow;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zz.agent.integration.CarSystemReadClient;
+import com.zz.agent.store.NearbyStoreAvailabilityService;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -16,7 +19,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
-/** Agent 自有任务存储；所有读取与更新都受管理员编号和数据库版本约束。 */
+/** Agent 自有任务存储；管理员操作按身份与版本约束，客户选择按候选与版本约束。 */
 public final class JdbcAgentTaskStore {
 
     public record AdvisorSnapshot(long advisorId, int processing, int total,
@@ -33,12 +36,31 @@ public final class JdbcAgentTaskStore {
 
     public record Task(UUID id, long adminId, long workOrderId, int orderType, int orderStatus,
                        Long orderAdvisorId, String orderUpdatedAt, long version, TaskState state,
-                       ReadOnlyAdviceFlow.Supplement supplement, Preview preview, Instant updatedAt) {
+                       ReadOnlyAdviceFlow.Supplement supplement, Preview preview, Instant updatedAt,
+                       StoreChoice storeChoice) {
+        public Task(UUID id, long adminId, long workOrderId, int orderType, int orderStatus,
+                    Long orderAdvisorId, String orderUpdatedAt, long version, TaskState state,
+                    ReadOnlyAdviceFlow.Supplement supplement, Preview preview, Instant updatedAt) {
+            this(id, adminId, workOrderId, orderType, orderStatus, orderAdvisorId,
+                    orderUpdatedAt, version, state, supplement, preview, updatedAt, null);
+        }
+    }
+
+    public record StoreChoice(UUID offerId, long customerId, String snapshotId, Instant selectedAt) {
+    }
+
+    public record StoreOffer(UUID id, UUID taskId, long customerId, long taskVersion,
+                             String modelCode, OffsetDateTime appointmentAt,
+                             List<NearbyStoreAvailabilityService.Option> options, Instant expiresAt) {
+        public StoreOffer {
+            options = List.copyOf(options);
+        }
     }
 
     private static final String COLUMNS = "task_id, admin_id, work_order_id, order_type, order_status, "
             + "order_advisor_id, order_updated_at, version, state, store_id, model_code, "
-            + "appointment_at, preview_json, updated_at";
+            + "appointment_at, preview_json, updated_at, choice_offer_id, "
+            + "choice_customer_id, choice_snapshot_id, choice_selected_at";
     private static final String EDITABLE_STATES = "('NEEDS_INPUT', 'NEEDS_REVIEW', "
             + "'READY_FOR_ADMIN_REVIEW', 'STALE_PROPOSAL')";
     private static final Pattern POLICY_SOURCE_REF = Pattern.compile(
@@ -73,6 +95,22 @@ public final class JdbcAgentTaskStore {
                     updated_at timestamptz NOT NULL DEFAULT now()
                 )
                 """);
+        jdbc.execute("ALTER TABLE agent_task ADD COLUMN IF NOT EXISTS choice_offer_id uuid");
+        jdbc.execute("ALTER TABLE agent_task ADD COLUMN IF NOT EXISTS choice_customer_id bigint");
+        jdbc.execute("ALTER TABLE agent_task ADD COLUMN IF NOT EXISTS choice_snapshot_id varchar(200)");
+        jdbc.execute("ALTER TABLE agent_task ADD COLUMN IF NOT EXISTS choice_selected_at timestamptz");
+        jdbc.execute("""
+                CREATE TABLE IF NOT EXISTS agent_store_offer (
+                    offer_id uuid PRIMARY KEY,
+                    task_id uuid NOT NULL REFERENCES agent_task(task_id),
+                    customer_id bigint NOT NULL CHECK (customer_id > 0),
+                    task_version bigint NOT NULL CHECK (task_version >= 0),
+                    model_code varchar(100) NOT NULL,
+                    appointment_at timestamptz NOT NULL,
+                    options_json jsonb NOT NULL,
+                    expires_at timestamptz NOT NULL
+                )
+                """);
     }
 
     public Task create(long adminId, CarSystemReadClient.WorkOrder order) {
@@ -98,6 +136,112 @@ public final class JdbcAgentTaskStore {
                 taskMapper, taskId, adminId).stream().findFirst();
     }
 
+    /** 仅供已验证客户身份的流程再次核查工单归属；不得直接暴露为客户查询接口。 */
+    public Optional<Task> findForOwnershipCheck(UUID taskId) {
+        if (taskId == null) {
+            return Optional.empty();
+        }
+        return jdbc.query("SELECT " + COLUMNS + " FROM agent_task WHERE task_id = ?",
+                taskMapper, taskId).stream().findFirst();
+    }
+
+    public StoreOffer createStoreOffer(UUID taskId, long customerId, long expectedVersion,
+                                       String modelCode, OffsetDateTime appointmentAt,
+                                       List<NearbyStoreAvailabilityService.Option> options,
+                                       Instant expiresAt) {
+        if (taskId == null || customerId <= 0 || expectedVersion < 0 || invalidCode(modelCode)
+                || modelCode == null || modelCode.isBlank() || appointmentAt == null
+                || options == null || options.isEmpty() || options.size() > 5 || expiresAt == null) {
+            throw new IllegalArgumentException("选店候选参数不合法");
+        }
+        Task task = findForOwnershipCheck(taskId).orElseThrow(() -> new IllegalArgumentException("任务不存在"));
+        if (task.version() != expectedVersion || !editable(task.state())
+                || task.supplement().storeId() != null || task.storeChoice() != null) {
+            throw new IllegalStateException("任务版本或状态已变化");
+        }
+        String optionsJson;
+        try {
+            optionsJson = json.writeValueAsString(options);
+        } catch (JsonProcessingException error) {
+            throw new IllegalStateException("候选门店编码失败", error);
+        }
+        UUID id = UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO agent_store_offer (offer_id, task_id, customer_id, task_version,
+                  model_code, appointment_at, options_json, expires_at)
+                VALUES (?, ?, ?, ?, ?, ?, CAST(? AS jsonb), ?)
+                """, id, taskId, customerId, expectedVersion, modelCode, appointmentAt,
+                optionsJson, Timestamp.from(expiresAt));
+        return new StoreOffer(id, taskId, customerId, expectedVersion, modelCode,
+                appointmentAt, options, expiresAt);
+    }
+
+    public Optional<StoreOffer> findStoreOffer(UUID offerId) {
+        if (offerId == null) {
+            return Optional.empty();
+        }
+        return jdbc.query("SELECT * FROM agent_store_offer WHERE offer_id = ?", (rs, row) -> {
+            List<NearbyStoreAvailabilityService.Option> options;
+            try {
+                options = json.readValue(rs.getString("options_json"),
+                        new TypeReference<List<NearbyStoreAvailabilityService.Option>>() {});
+            } catch (JsonProcessingException error) {
+                throw new SQLException("候选门店记录格式错误", error);
+            }
+            return new StoreOffer(rs.getObject("offer_id", UUID.class),
+                    rs.getObject("task_id", UUID.class), rs.getLong("customer_id"),
+                    rs.getLong("task_version"), rs.getString("model_code"),
+                    rs.getObject("appointment_at", OffsetDateTime.class), options,
+                    rs.getTimestamp("expires_at").toInstant());
+        }, offerId).stream().findFirst();
+    }
+
+    /** 快照一致且版本未变时只写一次；重复提交同一选择返回已保存结果。 */
+    public Optional<Task> chooseStore(UUID offerId, long customerId, String storeId,
+                                      String currentSnapshotId, Instant now) {
+        StoreOffer offer = findStoreOffer(offerId).orElse(null);
+        if (offer == null || offer.customerId() != customerId || now == null) {
+            return Optional.empty();
+        }
+        Task current = findForOwnershipCheck(offer.taskId()).orElse(null);
+        if (current != null && current.storeChoice() != null
+                && offerId.equals(current.storeChoice().offerId())
+                && customerId == current.storeChoice().customerId()
+                && Objects.equals(storeId, current.supplement().storeId())) {
+            return Optional.of(current);
+        }
+        if (!now.isBefore(offer.expiresAt()) || storeId == null || currentSnapshotId == null) {
+            return Optional.empty();
+        }
+        NearbyStoreAvailabilityService.Option option = offer.options().stream()
+                .filter(item -> storeId.equals(item.storeId())).findFirst().orElse(null);
+        if (option == null || !option.selectable() || !option.simulated()
+                || option.availability() != NearbyStoreAvailabilityService.Availability.AVAILABLE
+                || !currentSnapshotId.equals(option.snapshotId())) {
+            return Optional.empty();
+        }
+        Optional<Task> saved = jdbc.query("""
+                UPDATE agent_task SET store_id = ?, model_code = ?, appointment_at = ?,
+                  choice_offer_id = ?, choice_customer_id = ?, choice_snapshot_id = ?,
+                  choice_selected_at = ?, preview_json = NULL, state = 'NEEDS_INPUT',
+                  version = version + 1, updated_at = now()
+                WHERE task_id = ? AND version = ? AND store_id IS NULL
+                  AND choice_offer_id IS NULL AND state IN %s
+                RETURNING %s
+                """.formatted(EDITABLE_STATES, COLUMNS), taskMapper,
+                storeId, offer.modelCode(), offer.appointmentAt(), offerId, customerId,
+                currentSnapshotId, Timestamp.from(now), offer.taskId(), offer.taskVersion()).stream().findFirst();
+        if (saved.isPresent()) {
+            return saved;
+        }
+        Task after = findForOwnershipCheck(offer.taskId()).orElse(null);
+        return after != null && after.storeChoice() != null
+                && offerId.equals(after.storeChoice().offerId())
+                && customerId == after.storeChoice().customerId()
+                && Objects.equals(storeId, after.supplement().storeId())
+                ? Optional.of(after) : Optional.empty();
+    }
+
     /** 任何补充信息写入都使先前的预览失效。版本不匹配时不覆盖。 */
     public Optional<Task> updateSupplement(UUID taskId, long adminId, long expectedVersion,
                                             ReadOnlyAdviceFlow.Supplement supplement) {
@@ -107,6 +251,8 @@ public final class JdbcAgentTaskStore {
         }
         return jdbc.query("""
                 UPDATE agent_task SET store_id = ?, model_code = ?, appointment_at = ?,
+                  choice_offer_id = NULL, choice_customer_id = NULL,
+                  choice_snapshot_id = NULL, choice_selected_at = NULL,
                   preview_json = NULL, state = 'NEEDS_INPUT', version = version + 1,
                   updated_at = now()
                 WHERE task_id = ? AND admin_id = ? AND version = ? AND state IN %s
@@ -175,13 +321,22 @@ public final class JdbcAgentTaskStore {
         long advisorId = rs.getLong("order_advisor_id");
         Long orderAdvisorId = rs.wasNull() ? null : advisorId;
         OffsetDateTime appointmentAt = rs.getObject("appointment_at", OffsetDateTime.class);
+        UUID offerId = rs.getObject("choice_offer_id", UUID.class);
+        StoreChoice choice = offerId == null ? null : new StoreChoice(offerId,
+                rs.getLong("choice_customer_id"), rs.getString("choice_snapshot_id"),
+                rs.getTimestamp("choice_selected_at").toInstant());
         return new Task(rs.getObject("task_id", UUID.class), rs.getLong("admin_id"),
                 rs.getLong("work_order_id"), rs.getInt("order_type"), rs.getInt("order_status"),
                 orderAdvisorId, rs.getString("order_updated_at"), rs.getLong("version"),
                 TaskState.valueOf(rs.getString("state")),
                 new ReadOnlyAdviceFlow.Supplement(rs.getString("store_id"),
                         rs.getString("model_code"), appointmentAt), preview,
-                rs.getTimestamp("updated_at").toInstant());
+                rs.getTimestamp("updated_at").toInstant(), choice);
+    }
+
+    private static boolean editable(TaskState state) {
+        return state == TaskState.NEEDS_INPUT || state == TaskState.NEEDS_REVIEW
+                || state == TaskState.READY_FOR_ADMIN_REVIEW || state == TaskState.STALE_PROPOSAL;
     }
 
     private static boolean invalidCode(String value) {

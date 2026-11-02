@@ -2,6 +2,8 @@
 
 日期：2026-11-02。此阶段只完成 C02 的**候选展示**，没有客户选店、真实车源查询、预约或工单分配。
 
+后续已增加[客户选店代码与隔离测试](customer-store-selection.md)；本页保留当时“只展示候选”的验证记录。
+
 ## 数据与入口
 
 - 六家门店坐标和 `MX-7` 在 `2026-11-07 14:00+08:00` 的虚构车辆、时段状态保存在 [`data/stores/simulated-v1.json`](../../../data/stores/simulated-v1.json)。该文件独立于评测输入 [`c02-v1.json`](../../../data/eval/store-selection/c02-v1.json)，两者均明确标为模拟。

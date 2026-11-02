@@ -57,8 +57,10 @@ public final class HttpCarSystemReadClient implements CarSystemReadClient {
         JsonNode data = read("/api/workOrder/get?id=" + workOrderId, cookieHeader);
         JsonNode advisor = data.path("advisorId");
         Long advisorId = advisor.isMissingNode() || advisor.isNull() ? null : positiveLong(data, "advisorId");
+        JsonNode customer = data.path("customerId");
+        Long customerId = customer.isMissingNode() || customer.isNull() ? null : positiveLong(data, "customerId");
         return new WorkOrder(positiveLong(data, "id"), requiredInt(data, "type"),
-                requiredInt(data, "status"), advisorId, textOrNull(data, "updateTime"));
+                requiredInt(data, "status"), advisorId, textOrNull(data, "updateTime"), customerId);
     }
 
     @Override

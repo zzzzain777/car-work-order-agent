@@ -34,7 +34,7 @@ class HttpCarSystemReadClientTest {
             record(exchange.getRequestMethod() + " " + exchange.getRequestURI().getRawQuery(),
                     exchange.getRequestHeaders().getFirst("Cookie"));
             respond(exchange, """
-                    {"code":0,"data":{"id":1001,"type":1,"status":0,"advisorId":null,
+                    {"code":0,"data":{"id":1001,"customerId":5001,"type":1,"status":0,"advisorId":null,
                      "title":"模拟试驾","content":"模拟客户描述","updateTime":"2026-10-28 09:00:00",
                      "customerName":"不应保留"}}
                     """);
@@ -64,7 +64,9 @@ class HttpCarSystemReadClientTest {
         String cookies = "theme=dark; SESSION=test-session-123; other=value";
 
         assertEquals(9001L, client.currentUser(cookies).id());
-        assertEquals(1001L, client.getWorkOrder(cookies, 1001).id());
+        CarSystemReadClient.WorkOrder order = client.getWorkOrder(cookies, 1001);
+        assertEquals(1001L, order.id());
+        assertEquals(5001L, order.customerId());
         assertEquals(301L, client.listAdvisors(cookies).getFirst().id());
         assertEquals(1, client.workloads(cookies).getFirst().processing());
         assertEquals(4, requests.size());

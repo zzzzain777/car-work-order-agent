@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>模拟试驾门店选择 · 汽车工单 Agent</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, "PingFang SC", sans-serif; color: #17212b; background: #f4f6f8; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    header { background: #132b3a; color: #fff; padding: 28px 20px 32px; }
+    header div, main { max-width: 850px; margin: auto; }
+    h1 { margin: 0 0 7px; font-size: clamp(25px, 4vw, 34px); }
+    header p { margin: 0; color: #c8dbe5; line-height: 1.6; }
+    main { display: grid; gap: 16px; padding: 22px 18px 45px; }
+    section, .notice { border-radius: 13px; padding: 19px; }
+    section { background: #fff; border: 1px solid #dde5e9; }
+    .notice { background: #fff5dd; color: #604710; border: 1px solid #ebd296; line-height: 1.6; }
+    .status { background: #e8f3f8; color: #1a526c; border-color: #b7dce9; }
+    .error { background: #fff0ed; color: #9b2e20; border-color: #edc7c1; }
+    h2 { margin: 0 0 8px; font-size: 19px; }
+    p { line-height: 1.6; }
+    .hint { color: #526575; font-size: 14px; margin: 0 0 15px; }
+    .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; align-items: end; }
+    label { display: grid; gap: 6px; font-size: 14px; font-weight: 650; }
+    input { width: 100%; min-height: 42px; padding: 9px 11px; border: 1px solid #aab9c3; border-radius: 8px; font: inherit; }
+    button { min-height: 42px; padding: 9px 16px; border: 0; border-radius: 8px; background: #0c698f; color: #fff; font: inherit; font-weight: 650; cursor: pointer; }
+    button:disabled { background: #bdc9d0; cursor: not-allowed; }
+    button:focus-visible, input:focus-visible { outline: 3px solid #64b6e6; outline-offset: 2px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    .store { display: flex; align-items: center; justify-content: space-between; gap: 15px; border-top: 1px solid #e5ecef; padding: 14px 0; }
+    .store:first-child { border-top: 0; }
+    .store strong { display: block; }
+    .store small { color: #526575; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+<header><div><h1>选择模拟试驾门店</h1><p>客户本人选择 · 最近五家 · 仅保存到 Agent 任务</p></div></header>
+<main>
+  <div class="notice"><strong>演示数据。</strong>门店、试驾车和时段均为虚构状态。选择门店不代表已经预约，也不会修改 carSystem 原工单或分配顾问。</div>
+  <section>
+    <h2>1. 验证客户登录</h2>
+    <p class="hint">请先在同一个浏览器的 <a href="http://localhost:8080/api/index.html" target="_blank" rel="noopener">carSystem 页面</a>登录<strong>这张工单的客户本人</strong>，再回到这里检查。管理员账号不能代客户点击。</p>
+    <div id="status" class="notice status" role="status">正在检查客户会话……</div>
+    <div class="actions"><button id="connect" type="button">重新检查</button></div>
+  </section>
+  <section>
+    <h2>2. 打开任务</h2>
+    <p class="hint">从管理员演示页复制任务编号。系统会核对你是否是原工单的客户。</p>
+    <form id="task-form" class="row">
+      <label>Agent 任务编号<input id="task-id" required placeholder="粘贴任务编号"></label>
+      <button id="open-task" type="submit" disabled>打开我的任务</button>
+    </form>
+    <p id="task-info" class="hint" role="status"></p>
+  </section>
+  <section id="search-panel" hidden>
+    <h2>3. 查看最近五家模拟门店</h2>
+    <p class="hint">请在同意提供位置后填写大致坐标；位置只用于本次查询，不保存到任务中。</p>
+    <form id="offer-form">
+      <div class="row">
+        <label>位置纬度<input id="latitude" type="number" min="-90" max="90" step="any" value="31.2304" required></label>
+        <label>位置经度<input id="longitude" type="number" min="-180" max="180" step="any" value="121.4737" required></label>
+        <label>车型编号<input id="model-code" value="MX-7" required></label>
+        <label>希望试驾的时间<input id="appointment" type="datetime-local" value="2026-11-07T14:00" required></label>
+      </div>
+      <div class="actions"><button id="locate" type="button">使用浏览器位置</button><button id="find" type="submit">查询最近五家</button></div>
+    </form>
+    <p class="hint">只有显示“模拟有车且时段空闲”的门店可选择。候选保留十分钟；状态变化时需重新查询。</p>
+    <div id="stores" aria-live="polite"></div>
+  </section>
+</main>
+<script>
+  const $ = id => document.getElementById(id);
+  let csrf = null;
+  let task = null;
+  let offer = null;
+
+  function message(text, isError = false) {
+    $('status').textContent = text;
+    $('status').className = isError ? 'notice error' : 'notice status';
+  }
+
+  async function api(path, method = 'GET', body) {
+    const headers = {};
+    if (method !== 'GET') {
+      headers['Content-Type'] = 'application/json';
+      headers['X-Agent-CSRF'] = csrf;
+    }
+    const response = await fetch(path, {
+      method, headers, credentials: 'same-origin', cache: 'no-store',
+      body: body === undefined ? undefined : JSON.stringify(body)
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.message || `请求未通过（${response.status}）`);
+    return result;
+  }
+
+  async function connect() {
+    try {
+      const issued = await api('/api/agent/customer-stores/csrf');
+      csrf = issued.token;
+      $('open-task').disabled = false;
+      message('客户登录已通过，可以打开自己工单对应的 Agent 任务。');
+    } catch (error) {
+      csrf = null;
+      task = null;
+      offer = null;
+      $('open-task').disabled = true;
+      $('search-panel').hidden = true;
+      message(`请先登录原工单的客户账号：${error.message}`, true);
+    }
+  }
+
+  function renderTask(current) {
+    task = current;
+    $('task-info').textContent = current.selectedStoreId
+      ? `工单 ${current.workOrderId} · 已记录门店 ${current.selectedStoreId} · 任务版本 ${current.version}`
+      : `工单 ${current.workOrderId} · 尚未选择门店 · 任务版本 ${current.version}`;
+    $('search-panel').hidden = !!current.selectedStoreId;
+  }
+
+  function renderOffer(current) {
+    offer = current;
+    $('stores').replaceChildren();
+    const labels = {AVAILABLE: '模拟有车且时段空闲', NO_VEHICLE: '模拟无试驾车',
+      SLOT_FULL: '模拟时段已满', UNKNOWN: '模拟状态未知'};
+    for (const option of current.options) {
+      const row = document.createElement('div');
+      row.className = 'store';
+      const details = document.createElement('div');
+      const name = document.createElement('strong');
+      name.textContent = option.storeId;
+      const state = document.createElement('small');
+      state.textContent = `直线距离 ${option.distanceKm.toFixed(1)} km · ${labels[option.availability] || '状态未知'}`;
+      details.append(name, state);
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = option.selectable ? '选择这家' : '不可选择';
+      button.disabled = !option.selectable;
+      button.addEventListener('click', async () => {
+        button.disabled = true;
+        try {
+          await api('/api/agent/customer-stores/choices', 'POST', {
+            offerId: offer.id, storeId: option.storeId
+          });
+          renderTask(await api(`/api/agent/customer-stores/${task.taskId}`));
+          message(`已把 ${option.storeId} 保存到 Agent 任务。等待管理员核对；尚未预约。`);
+        } catch (error) {
+          message(`选择未保存：${error.message}。请重新查询候选。`, true);
+          button.disabled = false;
+        }
+      });
+      row.append(details, button);
+      $('stores').appendChild(row);
+    }
+  }
+
+  $('connect').addEventListener('click', connect);
+  $('task-form').addEventListener('submit', async event => {
+    event.preventDefault();
+    try {
+      renderTask(await api(`/api/agent/customer-stores/${encodeURIComponent($('task-id').value.trim())}`));
+      message('已确认工单归属。可以查询最近五家模拟门店。');
+    } catch (error) {
+      $('search-panel').hidden = true;
+      message(`无法打开任务：${error.message}`, true);
+    }
+  });
+  $('offer-form').addEventListener('submit', async event => {
+    event.preventDefault();
+    $('find').disabled = true;
+    try {
+      const current = await api(`/api/agent/customer-stores/${task.taskId}`);
+      renderTask(current);
+      renderOffer(await api(`/api/agent/customer-stores/${task.taskId}/offers`, 'POST', {
+        expectedVersion: current.version,
+        latitude: Number($('latitude').value), longitude: Number($('longitude').value),
+        modelCode: $('model-code').value.trim(),
+        appointmentAt: new Date($('appointment').value).toISOString()
+      }));
+      message('已显示最近五家。可用状态属于模拟数据，请在十分钟内选择。');
+    } catch (error) {
+      $('stores').replaceChildren();
+      message(`候选查询失败：${error.message}`, true);
+    } finally {
+      $('find').disabled = false;
+    }
+  });
+  $('locate').addEventListener('click', () => {
+    if (!navigator.geolocation) return message('浏览器不支持定位，请手动填写大致位置。', true);
+    navigator.geolocation.getCurrentPosition(position => {
+      $('latitude').value = String(position.coords.latitude);
+      $('longitude').value = String(position.coords.longitude);
+      message('位置已填入；点击查询最近五家。');
+    }, () => message('未取得位置，请手动填写大致位置。', true), {timeout: 10000});
+  });
+  const linkedTaskId = new URLSearchParams(location.search).get('taskId');
+  if (linkedTaskId) $('task-id').value = linkedTaskId;
+  connect();
+</script>
+</body>
+</html>
