@@ -15,7 +15,7 @@
 8. 同时启用 `policy-rag,deepseek,bailian-embedding`，从项目根目录启动应用后，在浏览器打开 `http://localhost:8091/agent-demo.html`。先在**同一个浏览器**打开 `http://localhost:8080/api/index.html` 登录本机 `carSystem` 管理员；两页都使用 `localhost`，再回演示页点击“重新检查”。Chrome 与应用内浏览器的 Cookie 不共享。页面会依次创建任务、补充信息、显示政策和顾问依据、生成模型候选并做**模拟确认**；写入要求同源 Origin 和会话绑定的 CSRF Token。需要已有的 DeepSeek、百炼和本地数据库配置；详见[操作页记录](docs/verification/stage-1/local-demo-entry.md)。
 9. [模拟人工确认](docs/verification/stage-1/simulated-confirmation.md)的提案有效期 10 分钟，确认时复查管理员、工单、政策和顾问，持久化一次性尝试；模拟分配超时只复读工单并保持“结果未知”。网页接入的模拟端固定返回“拒绝”且绝不改 `carSystem`。正常成功、超时和并发结果由隔离测试验证，不能把网页操作算作真实分配联调。
 
-Java 21 + Spring Boot 3.5.8 是当前**可启动骨架**的版本；pgvector 已有[隔离 SQL 探针](docs/verification/stage-0/pgvector-probe.md)和[无 Key 的 Java 接线探针](docs/verification/stage-1/java-pgvector-probe.md)。DeepSeek 的 `deepseek-flash` 完成了一次真实短文本联通；百炼的 `qwen3.7-text-embedding-flash` 已与本地 pgvector 跑通模拟政策检索。真实管理员浏览器能读取证据并写入 Agent 任务；当前运行的 `carSystem` 在账号降级或封禁后仍接受旧 Session，真实分配必须保持关闭。[联调记录](docs/verification/stage-1/local-demo-entry.md)列出了通过项和失败项。
+Java 21 + Spring Boot 3.5.8 是当前**可启动骨架**的版本；pgvector 已有[隔离 SQL 探针](docs/verification/stage-0/pgvector-probe.md)和[无 Key 的 Java 接线探针](docs/verification/stage-1/java-pgvector-probe.md)。DeepSeek 的 `deepseek-flash` 完成了一次真实短文本联通；百炼的 `qwen3.7-text-embedding-flash` 已与本地 pgvector 跑通模拟政策检索。真实管理员浏览器能读取证据并写入 Agent 任务；重新编译后的本机 `carSystem` 已通过[账号降级和封禁后的旧会话复测](docs/verification/stage-1/session-revocation-retest.md)，但该下游修改尚未提交，且工单快照与顾问门店归属等门槛未完成，真实分配继续关闭。[联调记录](docs/verification/stage-1/local-demo-entry.md)保留了旧运行版本的失败案例。
 
 政策检索有[候选证据判断](docs/verification/stage-1/policy-evidence-gate.md)：价格、实时车源等问题不会拿模拟试驾政策作依据；同范围多份政策交人工。可选的向量检索已返回真实存储的片段并核对原文，但还没有生成答案或进行答案事实核验。
 
