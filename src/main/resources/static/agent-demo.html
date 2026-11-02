@@ -343,15 +343,35 @@
     renderAdvice(await api(`/api/agent/tasks/${task.id}/recommend`, 'POST', {expectedVersion: task.version}));
     showStatus(proposal ? '建议已生成，等待管理员核对。' : '当前证据不足，请按提示人工核对。');
   }));
+  function decisionMessage(outcome, approve) {
+    if (!approve) return '管理员已拒绝这条建议；未调用模拟分配端。';
+    const observations = {
+      UNCHANGED: '工单重查未变化', TARGET_ASSIGNED: '重查发现目标顾问已分配',
+      CHANGED: '工单已被其他操作修改', READ_FAILED: '工单重查失败',
+      INTERRUPTED: '调用中断'
+    };
+    const observation = observations[outcome.observation] || '没有可靠的重查结果';
+    switch (outcome.state) {
+      case 'DEFINITELY_FAILED':
+        return `模拟端明确拒绝，${observation}；本次模拟分配确定失败。`;
+      case 'OUTCOME_UNKNOWN':
+        return `结果未知（${observation}）；请人工核对业务工单，不能重复确认。`;
+      case 'SUCCEEDED':
+        return `模拟调用后${observation}；请以业务系统记录为准。`;
+      case 'EXECUTING':
+      case 'REVALIDATING':
+        return '模拟确认仍在处理中；请稍后重查任务，不要重复操作。';
+      default:
+        return `模拟确认返回 ${outcome.state}；请人工核对业务工单。`;
+    }
+  }
   async function decide(approve, button) {
     await act(button, async () => {
       const outcome = await api(`/api/agent/tasks/${task.id}/decision`, 'POST', {
         proposalId: proposal.id, version: proposal.taskVersion, approve
       });
       $('result-panel').hidden = false;
-      $('result-text').textContent = approve
-        ? `模拟确认结果：${outcome.state}。观察：${outcome.observation || '无'}。真实 carSystem 工单未被分配。`
-        : '管理员已拒绝这条建议；未调用模拟分配端。';
+      $('result-text').textContent = decisionMessage(outcome, approve);
       $('proposal-box').hidden = true;
       renderTask(await api(`/api/agent/tasks/${task.id}`));
     });
