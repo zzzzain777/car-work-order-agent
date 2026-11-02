@@ -69,7 +69,7 @@
     <form id="supplement-form" class="row">
       <label>门店编号<input id="store-id" required maxlength="100" value="STORE-A"></label>
       <label>车型编号<input id="model-code" required maxlength="100" value="MX-7"></label>
-      <label>计划试驾时间<input id="appointment" type="datetime-local" required value="2026-11-07T14:00"></label>
+      <label>计划试驾时间（北京时间）<input id="appointment" type="datetime-local" required value="2026-11-07T14:00"></label>
       <button type="submit">保存补充信息</button>
     </form>
   </section>
@@ -120,6 +120,14 @@
     $('session-status').className = error ? 'notice error' : 'notice';
   }
 
+  function shanghaiInputTime(instant) {
+    const fields = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).formatToParts(new Date(instant)).map(part => [part.type, part.value]));
+    return `${fields.year}-${fields.month}-${fields.day}T${fields.hour}:${fields.minute}`;
+  }
+
   async function api(path, method = 'GET', body = null) {
     const headers = {};
     if (method !== 'GET') {
@@ -159,7 +167,7 @@
     if (current.supplement?.storeId) $('store-id').value = current.supplement.storeId;
     if (current.supplement?.modelCode) $('model-code').value = current.supplement.modelCode;
     if (current.supplement?.appointmentAt)
-      $('appointment').value = current.supplement.appointmentAt.slice(0, 16);
+      $('appointment').value = shanghaiInputTime(current.supplement.appointmentAt);
     $('supplement-panel').hidden = false;
     $('nearby-panel').hidden = false;
     $('advice-panel').hidden = false;
