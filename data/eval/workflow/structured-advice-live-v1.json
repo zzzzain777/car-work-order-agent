@@ -1,0 +1,40 @@
+{
+  "scope": "structured-advice-live-v1",
+  "asOf": "2026-10-28T02:00:00Z",
+  "appointmentAt": "2026-11-07T14:00:00+08:00",
+  "cases": [
+    {
+      "caseId": "A01-normal",
+      "storeId": "STORE-A",
+      "modelCode": "MX-7",
+      "policySourceRefs": ["data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1"],
+      "expectedOutcome": "CANDIDATE",
+      "expectedAdvisorId": 301,
+      "expectedCitationRef": "data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1"
+    },
+    {
+      "caseId": "A02-multiple-chunks",
+      "storeId": "STORE-C",
+      "modelCode": "MX-7",
+      "policySourceRefs": [
+        "data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1",
+        "data/policies/STORE-C-MX-7-test-drive-v1.md#rule-2"
+      ],
+      "expectedOutcome": "CANDIDATE",
+      "expectedAdvisorId": 301,
+      "expectedCitationRef": "data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1"
+    },
+    {
+      "caseId": "A03-wrong-top-chunk",
+      "storeId": "STORE-C",
+      "modelCode": "MX-7",
+      "policySourceRefs": [
+        "data/policies/STORE-C-MX-7-test-drive-v1.md#rule-2",
+        "data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1"
+      ],
+      "expectedOutcome": "NEEDS_REVIEW",
+      "expectedAdvisorId": null,
+      "expectedCitationRef": null
+    }
+  ]
+}

@@ -13,3 +13,5 @@ C02 另有[机器可读的模拟选店输入和预期结果](../store-selection/
 本阶段的案例卡不足以单独证明普遍准确率。附近门店的坐标、车辆和时段可用性是模拟结构化数据，**不进入政策 RAG**；无真实门店或车辆 API 时，不能声称查询到实时车源。政策检索已有单独的[未参与关键词调试的挑战集](../retrieval/keyword-holdout-v1.tsv)，覆盖改写问法、无依据问题和时间边界，并保存逐例结果。脏格式政策、完整流程异常与并发案例仍待补充，不能把这组检索成绩当作任务成功率。
 
 完整步骤与检查点见[阶段 0A 计划](../../../docs/superpowers/plans/2026-10-27-stage-0a-evaluation-cards.md)。
+
+另外，[三道结构化建议固定输入](../workflow/structured-advice-live-v1.json)已用于真实模型切片评测，逐例结果见[联调记录](../../../docs/verification/stage-1/structured-advice-live-evaluation.md)。它们单独检查模型建议与引用校验，不属于上述完整业务案例的最终成绩。

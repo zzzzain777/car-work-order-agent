@@ -24,13 +24,15 @@ Java 21 + Spring Boot 3.5.8 是当前**可启动骨架**的版本；pgvector 已
 
 终端可用 JDK 21 运行 `mvn test` 或 `mvn spring-boot:run`；未安装全局 Maven 时，可在 IDEA 的 Maven 窗口运行相同目标。
 
-## 离线评测
+## 评测
 
 在 IDEA 运行 `PolicyRetrievalEvaluationTest`，会用固定模拟输入重放政策关键词检索，并把逐例结果写入 `target/eval/`。[草稿基线、挑战集和逐例结果](data/eval/results/README.md)已保存；挑战集目前 6/8 完全符合预期，暴露了同义问法漏召回和无依据价格问题误命中。它不是完整 Agent 的评测结果。
 
 显式运行 `PolicyRagLiveIntegrationTest` 会用真实向量模型和本地 pgvector 重放八个政策范围案例及三个同范围片段排序案例；当前分别为 8/8 和首条命中 3/3，逐例记录见[政策向量检索记录](docs/verification/stage-1/policy-rag.md)。语料仅六份模拟政策、七个片段，不能据此证明大语料的语义排序质量，也不能当作完整 Agent 成功率。
 
 另有[七个模拟案例的只读流程回放](docs/verification/stage-1/read-only-workflow-evaluation.md)：固定工单、政策、顾问和工作量响应，检查状态、出处、缺失信息与工具调用次数，逐例结果保存在 `data/eval/results/read-only-flow-v1.tsv`。本次暂定标准答案下为 7/7；它没有调用向量库或真实模型，不能当成完整 Agent 成绩。
+
+[三例真实模型结构化建议切片评测](docs/verification/stage-1/structured-advice-live-evaluation.md)记录了固定模拟输入、逐例引用、模型调用、Token 和耗时。其中两例生成候选、一例在错误首位政策片段下转人工；不包含真实检索或完整 Agent 成绩。
 
 ## 参考项目取舍
 

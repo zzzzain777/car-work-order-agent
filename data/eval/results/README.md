@@ -1,5 +1,7 @@
 # 离线评测结果
 
+真实模型的三例结构化建议切片评测另存于 [structured-advice-live-v1.tsv](structured-advice-live-v1.tsv)，方法和边界见[联调记录](../../../docs/verification/stage-1/structured-advice-live-evaluation.md)。输入固定，但模型输出可能变化；此成绩不包含真实检索或完整 Agent。
+
 只读流程另有[七个固定案例的逐例结果](read-only-flow-v1.tsv)和[运行边界说明](../../../docs/verification/stage-1/read-only-workflow-evaluation.md)。它评估状态与只读工具调用，使用政策原文片段而非向量召回；不要与下列检索数字合并成完整 Agent 成功率。
 
 [`keyword-baseline-v1.tsv`](keyword-baseline-v1.tsv) 是 Java 评测测试实际运行后保存的结果，不是人工填写的成绩。输入是 [`keyword-baseline-v1.tsv`](../retrieval/keyword-baseline-v1.tsv) 和本仓库六份模拟政策；文件头记录了两组输入的 SHA-256。
