@@ -112,7 +112,7 @@ class AgentTaskControllerTest {
                 List.of(), List.of(), CLOCK.instant(), false);
         StructuredAdviceService.Advice advice = new StructuredAdviceService.Advice(
                 StructuredAdviceService.Outcome.CANDIDATE, 301L, 1, 2, List.of(),
-                "请核对", "advice-v2", "deepseek-flash", 10, 5);
+                "请核对", StructuredAdviceService.PROMPT_VERSION, "deepseek-flash", 10, 5);
         AgentAdviceOrchestrator.Recommendation result =
                 new AgentAdviceOrchestrator.Recommendation(ready, preview, advice);
         JdbcConfirmationStore.Proposal proposal = new JdbcConfirmationStore.Proposal(

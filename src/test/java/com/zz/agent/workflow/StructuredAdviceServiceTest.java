@@ -21,7 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class StructuredAdviceServiceTest {
 
     private static final String SOURCE = "data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1";
-    private static final String RULE = "STORE-A 的 MX-7 在工作日 10:00 至 17:00 接受试驾申请。";
+    private static final String RULE = "STORE-A 的 MX-7 在工作日 10:00 至 17:00 接受试驾申请。门店选择不代表预约成功。示例时间：2026-11-07T14:00:00+08:00。";
+    private static final String SECOND_SOURCE = "data/policies/STORE-A-MX-7-test-drive-v1.md#rule-2";
+    private static final String SECOND_RULE = "STORE-A 的 MX-7 如需改期，至少提前一天联系门店。";
     private static final String VALID_JSON = """
             {"advisorId":301,"citations":[{"sourceRef":"%s","quote":"工作日 10:00 至 17:00 接受试驾申请"}]}
             """.formatted(SOURCE);
@@ -49,7 +51,7 @@ class StructuredAdviceServiceTest {
         assertEquals("deepseek-flash", advice.modelId());
         assertEquals(120, advice.promptTokens());
         assertEquals(35, advice.completionTokens());
-        assertEquals("advice-v2", advice.promptVersion());
+        assertEquals("advice-v3", advice.promptVersion());
         assertTrue(advice.message().contains("核对顾问 301"));
         assertTrue(systemPrompt.get().contains("JSON"));
         assertTrue(userPrompt.get().contains(SOURCE));
@@ -57,6 +59,62 @@ class StructuredAdviceServiceTest {
         assertFalse(userPrompt.get().contains("顾问张三"));
         assertFalse(userPrompt.get().contains("SESSION="));
         assertFalse(userPrompt.get().contains("9001"));
+    }
+
+    @Test
+    void onlyTopRankedTimeRuleCanSupportTheSuggestion() {
+        AtomicReference<String> userPrompt = new AtomicReference<>();
+        String secondRuleCitation = """
+                {"advisorId":301,"citations":[{"sourceRef":"%s","quote":"如需改期，至少提前一天联系门店"}]}
+                """.formatted(SECOND_SOURCE);
+        StructuredAdviceService service = new StructuredAdviceService((system, user) -> {
+            userPrompt.set(user);
+            return new StructuredAdviceService.Completion(secondRuleCitation, "deepseek-flash", 120, 35);
+        }, new ObjectMapper());
+
+        StructuredAdviceService.Advice advice = service.suggest(readyWithTwoPolicyRules());
+
+        assertEquals(StructuredAdviceService.Outcome.NEEDS_REVIEW, advice.outcome());
+        assertFalse(userPrompt.get().contains(SECOND_SOURCE));
+        assertFalse(userPrompt.get().contains(SECOND_RULE));
+        assertTrue(userPrompt.get().contains(SOURCE));
+    }
+
+    @Test
+    void acceptsTimeCitationWhenAnotherPolicyRuleWasAlsoRetrieved() {
+        StructuredAdviceService service = new StructuredAdviceService((system, user) ->
+                new StructuredAdviceService.Completion(VALID_JSON, "deepseek-flash", 120, 35),
+                new ObjectMapper());
+
+        StructuredAdviceService.Advice advice = service.suggest(readyWithTwoPolicyRules());
+
+        assertEquals(StructuredAdviceService.Outcome.CANDIDATE, advice.outcome());
+        assertEquals(List.of(new StructuredAdviceService.Citation(SOURCE,
+                "工作日 10:00 至 17:00 接受试驾申请")), advice.citations());
+    }
+
+    @Test
+    void quoteFromTheTopRuleStillNeedsTheApplicationTimeRange() {
+        String unrelatedQuote = """
+                {"advisorId":301,"citations":[{"sourceRef":"%s","quote":"门店选择不代表预约成功"}]}
+                """.formatted(SOURCE);
+        StructuredAdviceService service = new StructuredAdviceService((system, user) ->
+                new StructuredAdviceService.Completion(unrelatedQuote, "deepseek-flash", 120, 35),
+                new ObjectMapper());
+
+        assertEquals(StructuredAdviceService.Outcome.NEEDS_REVIEW, service.suggest(ready()).outcome());
+    }
+
+    @Test
+    void aSingleTimestampWithTimezoneIsNotAnApplicationTimeRange() {
+        String timestampQuote = """
+                {"advisorId":301,"citations":[{"sourceRef":"%s","quote":"2026-11-07T14:00:00+08:00"}]}
+                """.formatted(SOURCE);
+        StructuredAdviceService service = new StructuredAdviceService((system, user) ->
+                new StructuredAdviceService.Completion(timestampQuote, "deepseek-flash", 120, 35),
+                new ObjectMapper());
+
+        assertEquals(StructuredAdviceService.Outcome.NEEDS_REVIEW, service.suggest(ready()).outcome());
     }
 
     @Test
@@ -215,6 +273,22 @@ class StructuredAdviceServiceTest {
                 original.workOrderId(), original.orderType(), original.orderStatus(),
                 original.orderAdvisorId(), original.orderUpdatedAt(), original.version(),
                 original.state(), original.supplement(), preview, original.updatedAt());
+        return new AgentTaskWorkflow.Refresh(task, result);
+    }
+
+    private static AgentTaskWorkflow.Refresh readyWithTwoPolicyRules() {
+        AgentTaskWorkflow.Refresh base = ready();
+        List<PolicyEvidenceGate.Evidence> evidence = List.of(base.result().policyEvidence().getFirst(),
+                new PolicyEvidenceGate.Evidence("chunk-2", "POL-A", 1, SECOND_SOURCE, SECOND_RULE));
+        ReadOnlyAdviceFlow.Result result = new ReadOnlyAdviceFlow.Result(base.result().stage(),
+                base.result().workOrderId(), base.result().message(), base.result().missingFields(),
+                evidence, base.result().advisors(), base.result().observedAt(), false);
+        JdbcAgentTaskStore.Task old = base.task();
+        JdbcAgentTaskStore.Preview preview = new JdbcAgentTaskStore.Preview(old.preview().stage(),
+                List.of(SOURCE, SECOND_SOURCE), old.preview().advisors(), old.preview().observedAt());
+        JdbcAgentTaskStore.Task task = new JdbcAgentTaskStore.Task(old.id(), old.adminId(), old.workOrderId(),
+                old.orderType(), old.orderStatus(), old.orderAdvisorId(), old.orderUpdatedAt(), old.version(),
+                old.state(), old.supplement(), preview, old.updatedAt());
         return new AgentTaskWorkflow.Refresh(task, result);
     }
 }

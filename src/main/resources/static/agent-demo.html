@@ -95,7 +95,7 @@
     <button id="recommend" type="button">刷新证据并生成建议</button>
     <div id="advice-result" hidden>
       <p id="advice-message" class="notice" role="status"></p>
-      <h3>政策依据</h3><div id="evidence-list"></div>
+      <h3>政策检索候选与建议引用</h3><div id="evidence-list"></div>
       <h3>顾问工作量</h3><div id="advisor-list"></div>
       <div id="proposal-box" hidden>
         <p class="notice">建议等待管理员确认；只会调用固定拒绝的模拟分配端。<br>有效期至：<strong id="proposal-expiry"></strong></p>
@@ -227,8 +227,12 @@
     $('advice-result').hidden = false;
     $('advice-message').textContent = data.advice.message || data.preview.message;
     $('evidence-list').replaceChildren();
-    for (const item of data.preview.policyEvidence || [])
-      listItem($('evidence-list'), item.text, item.sourceRef);
+    for (const item of data.preview.policyEvidence || []) {
+      const citation = (data.advice.citations || []).find(row => row.sourceRef === item.sourceRef);
+      listItem($('evidence-list'), citation
+        ? `建议引用：${citation.quote}`
+        : `检索候选，建议未引用：${item.text}`, item.sourceRef);
+    }
     if (!data.preview.policyEvidence?.length) listItem($('evidence-list'), '没有可引用的政策依据，请人工核对。');
     $('advisor-list').replaceChildren();
     for (const advisor of data.preview.advisors || [])
@@ -248,7 +252,7 @@
     $('advice-message').textContent = `已恢复顾问 ${saved.advisorId} 的模拟建议。请重新核对下列历史依据；批准时服务端会再次读取工单和政策。`;
     $('evidence-list').replaceChildren();
     for (const ref of current.preview.policySourceRefs)
-      listItem($('evidence-list'), '请在仓库核对这条模拟政策原文。', ref);
+      listItem($('evidence-list'), '历史检索候选；请在仓库核对模拟政策原文。', ref);
     $('advisor-list').replaceChildren();
     for (const advisor of current.preview.advisors)
       listItem($('advisor-list'), `顾问 ${advisor.advisorId} · 处理中 ${advisor.processing} 单 · 总计 ${advisor.total} 单 · 门店归属未核实`);

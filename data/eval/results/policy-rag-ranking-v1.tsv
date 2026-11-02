@@ -1,4 +1,5 @@
 案例	预期首条出处	实际首条出处	返回片段数	通过
 R01	data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1	2	通过
 R02	data/policies/STORE-C-MX-7-test-drive-v1.md#rule-2	data/policies/STORE-C-MX-7-test-drive-v1.md#rule-2	2	通过
-# 首条命中=2/2
+R03	data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1	2	通过
+# 首条命中=3/3

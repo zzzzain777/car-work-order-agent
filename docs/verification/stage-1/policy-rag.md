@@ -28,11 +28,11 @@ curl -sS http://127.0.0.1:8091/api/policies/search \
 
 - 使用真实百炼向量模型和本机 pgvector 跑通了 Spring Boot HTTP 接口；新增 `STORE-C/MX-7` 的第二条模拟规则后，索引从六个片段更新到七个，再次启动未重复生成向量。运行系统设置了 SOCKS 代理，本地 PostgreSQL 连接通过仅限回环地址的 socket 工厂直连，联调无需额外修改 IDEA 的 Java 参数。
 - 显式运行 `PolicyRagLiveIntegrationTest`，将固定的八个案例逐例送入真实接口，结果 **8/8** 与期望的结果类别、政策编号和出处一致。[逐例结果](../../../data/eval/results/policy-rag-holdout-v1.tsv)。案例涵盖同义问法、价格拒答、时间边界、错车型、冲突政策及车型编号 `MX-7`/`MX-70` 的精确区分。
-- 同一版七片段语料上，用两道固定问题分别询问 C 店 MX-7 的开放时间和改期提前量；每次都返回同范围的两条片段，目标规则排在首位，**首条命中 2/2**。[案例输入](../../../data/eval/retrieval/rag-ranking-v1.tsv)与[逐例结果](../../../data/eval/results/policy-rag-ranking-v1.tsv)可复跑；这只检查排序首位，不表示只引用首位片段。
+- 同一版七片段语料上，用三道固定问题分别询问 C 店 MX-7 的开放时间、改期提前量，以及工单流程实际使用的“试驾申请时间”；每次都返回同范围的两条片段，目标规则排在首位，**首条命中 3/3**。[案例输入](../../../data/eval/retrieval/rag-ranking-v1.tsv)与[逐例结果](../../../data/eval/results/policy-rag-ranking-v1.tsv)可复跑；只检查排序首位，最终建议引用另由 `StructuredAdviceService` 校验。
 - 普通测试集不调用真实模型或本地开发数据库。独立的 `PolicyPgVectorProbeTest` 使用可重复的测试向量检查数据库过滤和索引更新，不用于证明语义质量。
 
 复跑真实联调测试时，在 IDEA 中运行 `PolicyRagLiveIntegrationTest` 并添加 VM 参数 `-Dpolicy.rag.live=true`；或用本机 Maven 执行 `mvn -Dpolicy.rag.live=true -Dtest=PolicyRagLiveIntegrationTest test`。该测试会发起真实向量请求，需先确认当前账号免费额度仍有效。
 
 ## 结果边界与下一步
 
-八个旧案例主要验证政策范围、拒答和引用；新增两例才涉及同一政策内的片段排序。两条短规则的 **2/2 不能解释为大语料语义召回率或完整 Agent 成功率**。当前接口会返回两条候选，并未证明最终回答只采用正确片段。政策证据已接入只读工单建议与模拟人工确认；答案事实核验和真实分配仍未完成。后续要扩展同范围挑战集，再比较关键词基线与向量方案。
+八个旧案例主要验证政策范围、拒答和引用；新增三例才涉及同一政策内的片段排序。两条短规则的 **3/3 不能解释为大语料语义召回率或完整 Agent 成功率**。接口仍返回两条候选，工单建议当前仅使用排首位的申请时间片段；完整语义事实核验和真实分配仍未完成。后续要扩展同范围挑战集，再比较关键词基线与向量方案。
