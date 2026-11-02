@@ -1,0 +1,13 @@
+# scope=read-only-flow-offline-v1
+# fixtureSha256=0a8c48378d762b0f16bac6f1e00841f33b3d47273cb7f6bae1ecd449e19f910e
+# corpusSha256=c86dc001bb57f7d347021a3075ce8b2cb5945f91471b669c80a38cd4de5c0ed4
+caseId	expectedStage	actualStage	expectedPolicyOutcome	actualPolicyOutcome	expectedSourceRefs	actualSourceRefs	expectedAdvisorIds	actualAdvisorIds	missingFields	orderCalls	policyCalls	advisorCalls	workloadCalls	assignmentEnabled	pass
+C01	READY_FOR_ADMIN_REVIEW	READY_FOR_ADMIN_REVIEW	CANDIDATES	CANDIDATES	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	301|302	301|302	-	1	1	1	1	false	PASS
+C03	NEEDS_INPUT	NEEDS_INPUT	NOT_CALLED	NOT_CALLED	-	-	-	-	appointmentAt	1	0	0	0	false	PASS
+C04	READY_FOR_ADMIN_REVIEW	READY_FOR_ADMIN_REVIEW	CANDIDATES	CANDIDATES	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	301|302	301|302	-	1	1	1	1	false	PASS
+C05	NEEDS_REVIEW	NEEDS_REVIEW	NO_APPLICABLE_POLICY	NO_APPLICABLE_POLICY	-	-	-	-	-	1	1	0	0	false	PASS
+C06	NEEDS_REVIEW	NEEDS_REVIEW	REVIEW_REQUIRED	REVIEW_REQUIRED	data/policies/STORE-E-MX-7-allow-v1.md#rule-1|data/policies/STORE-E-MX-7-deny-v1.md	data/policies/STORE-E-MX-7-allow-v1.md#rule-1|data/policies/STORE-E-MX-7-deny-v1.md	-	-	-	1	1	0	0	false	PASS
+C07	NEEDS_REVIEW	NEEDS_REVIEW	NO_APPLICABLE_POLICY	NO_APPLICABLE_POLICY	-	-	-	-	-	1	1	0	0	false	PASS
+C09	NEEDS_REVIEW	NEEDS_REVIEW	CANDIDATES	CANDIDATES	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	-	-	-	1	1	1	1	false	PASS
+# exactCasePass=7/7
+# assignmentEnabled=0/7

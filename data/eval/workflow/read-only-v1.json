@@ -1,0 +1,68 @@
+{
+  "scope": "read-only-flow-offline-v1",
+  "asOf": "2026-10-28T02:00:00Z",
+  "admin": {"id": 9001, "userRole": 2, "userStatus": 0},
+  "advisors": [
+    {"id": 301, "name": "模拟顾问甲", "userRole": 1, "userStatus": 0},
+    {"id": 302, "name": "模拟顾问乙", "userRole": 1, "userStatus": 0}
+  ],
+  "workloads": [
+    {"advisorId": 301, "processing": 1, "total": 2},
+    {"advisorId": 302, "processing": 3, "total": 4}
+  ],
+  "cases": [
+    {
+      "caseId": "C01", "orderId": 1001, "storeId": "STORE-A", "modelCode": "MX-7",
+      "appointmentAt": "2026-11-07T14:00:00+08:00", "workloadBusinessCode": 0,
+      "expectedStage": "READY_FOR_ADMIN_REVIEW", "expectedPolicyOutcome": "CANDIDATES",
+      "expectedSourceRefs": ["data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1"],
+      "expectedAdvisorIds": [301, 302], "expectedMissingFields": [],
+      "expectedPolicyCalls": 1, "expectedAdvisorCalls": 1, "expectedWorkloadCalls": 1
+    },
+    {
+      "caseId": "C03", "orderId": 1003, "storeId": "STORE-A", "modelCode": "MX-7",
+      "appointmentAt": null, "workloadBusinessCode": 0,
+      "expectedStage": "NEEDS_INPUT", "expectedPolicyOutcome": "NOT_CALLED", "expectedSourceRefs": [],
+      "expectedAdvisorIds": [], "expectedMissingFields": ["appointmentAt"],
+      "expectedPolicyCalls": 0, "expectedAdvisorCalls": 0, "expectedWorkloadCalls": 0
+    },
+    {
+      "caseId": "C04", "orderId": 1004, "storeId": "STORE-A", "modelCode": "MX-7",
+      "appointmentAt": "2026-11-07T14:00:00+08:00", "workloadBusinessCode": 0,
+      "expectedStage": "READY_FOR_ADMIN_REVIEW", "expectedPolicyOutcome": "CANDIDATES",
+      "expectedSourceRefs": ["data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1"],
+      "expectedAdvisorIds": [301, 302], "expectedMissingFields": [],
+      "expectedPolicyCalls": 1, "expectedAdvisorCalls": 1, "expectedWorkloadCalls": 1
+    },
+    {
+      "caseId": "C05", "orderId": 1005, "storeId": "STORE-D", "modelCode": "MX-7",
+      "appointmentAt": "2026-11-08T14:00:00+08:00", "workloadBusinessCode": 0,
+      "expectedStage": "NEEDS_REVIEW", "expectedPolicyOutcome": "NO_APPLICABLE_POLICY", "expectedSourceRefs": [],
+      "expectedAdvisorIds": [], "expectedMissingFields": [],
+      "expectedPolicyCalls": 1, "expectedAdvisorCalls": 0, "expectedWorkloadCalls": 0
+    },
+    {
+      "caseId": "C06", "orderId": 1006, "storeId": "STORE-E", "modelCode": "MX-7",
+      "appointmentAt": "2026-11-07T14:00:00+08:00", "workloadBusinessCode": 0,
+      "expectedStage": "NEEDS_REVIEW", "expectedPolicyOutcome": "REVIEW_REQUIRED",
+      "expectedSourceRefs": ["data/policies/STORE-E-MX-7-allow-v1.md#rule-1", "data/policies/STORE-E-MX-7-deny-v1.md"],
+      "expectedAdvisorIds": [], "expectedMissingFields": [],
+      "expectedPolicyCalls": 1, "expectedAdvisorCalls": 0, "expectedWorkloadCalls": 0
+    },
+    {
+      "caseId": "C07", "orderId": 1007, "storeId": "STORE-C", "modelCode": "MX-70",
+      "appointmentAt": "2026-11-07T14:00:00+08:00", "workloadBusinessCode": 0,
+      "expectedStage": "NEEDS_REVIEW", "expectedPolicyOutcome": "NO_APPLICABLE_POLICY", "expectedSourceRefs": [],
+      "expectedAdvisorIds": [], "expectedMissingFields": [],
+      "expectedPolicyCalls": 1, "expectedAdvisorCalls": 0, "expectedWorkloadCalls": 0
+    },
+    {
+      "caseId": "C09", "orderId": 1009, "storeId": "STORE-A", "modelCode": "MX-7",
+      "appointmentAt": "2026-11-07T14:00:00+08:00", "workloadBusinessCode": 50000,
+      "expectedStage": "NEEDS_REVIEW", "expectedPolicyOutcome": "CANDIDATES",
+      "expectedSourceRefs": ["data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1"],
+      "expectedAdvisorIds": [], "expectedMissingFields": [],
+      "expectedPolicyCalls": 1, "expectedAdvisorCalls": 1, "expectedWorkloadCalls": 1
+    }
+  ]
+}
