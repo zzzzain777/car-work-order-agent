@@ -59,7 +59,7 @@
       <label>工单编号<input id="order-id" type="number" min="1" step="1" required placeholder="例如 1001"></label>
       <button id="create" type="submit" disabled>创建任务</button>
     </form>
-    <dl id="task-summary" hidden><dt>任务编号</dt><dd id="task-id"></dd><dt>当前状态</dt><dd id="task-state"></dd><dt>任务版本</dt><dd id="task-version"></dd><dt>客户选店入口</dt><dd><a id="customer-link" href="/customer-store.html" target="_blank" rel="noopener">打开客户页面</a>（需由原工单客户本人登录）</dd></dl>
+    <dl id="task-summary" hidden><dt>工单编号</dt><dd id="task-order-id"></dd><dt>任务编号</dt><dd id="task-id"></dd><dt>当前状态</dt><dd id="task-state"></dd><dt>任务版本</dt><dd id="task-version"></dd><dt>客户选店入口</dt><dd><a id="customer-link" href="/customer-store.html" target="_blank" rel="noopener">打开客户页面</a>（需由原工单客户本人登录）</dd></dl>
     <div id="task-actions" class="actions" hidden><button id="refresh-task" type="button" class="secondary">刷新任务，查看客户选择</button></div>
   </section>
 
@@ -157,6 +157,24 @@
       token = issued.token;
       $('create').disabled = false;
       showStatus('管理员会话已通过检查，可以创建本机任务。');
+      const taskId = new URLSearchParams(location.search).get('taskId');
+      if (taskId) {
+        try {
+          const current = await api(`/api/agent/tasks/${encodeURIComponent(taskId)}`);
+          renderTask(current);
+          proposal = null;
+          $('advice-result').hidden = true;
+          if (current.state === 'AWAITING_CONFIRMATION') {
+            renderRestoredProposal(current, await api(`/api/agent/tasks/${encodeURIComponent(taskId)}/pending-proposal`));
+          }
+          showStatus('已恢复当前任务；请核对状态和依据。');
+        } catch (error) {
+          $('proposal-box').hidden = true;
+          showStatus(task?.id === taskId && task.state === 'AWAITING_CONFIRMATION'
+            ? '任务已恢复，但待确认建议已过期或不可用，不能批准；请创建新任务。'
+            : `管理员会话有效，但任务恢复失败：${error.message}。可创建新任务。`, true);
+        }
+      }
     } catch (error) {
       token = null;
       $('create').disabled = true;
@@ -166,11 +184,20 @@
 
   function renderTask(current) {
     task = current;
+    const url = new URL(location.href);
+    url.searchParams.set('taskId', current.id);
+    history.replaceState(null, '', url);
     $('task-summary').hidden = false;
     $('task-actions').hidden = false;
+    $('task-order-id').textContent = String(current.workOrderId);
     $('task-id').textContent = current.id;
     $('task-state').textContent = current.state;
     $('task-version').textContent = String(current.version);
+    const editable = ['NEEDS_INPUT', 'NEEDS_REVIEW', 'READY_FOR_ADMIN_REVIEW', 'STALE_PROPOSAL']
+      .includes(current.state);
+    $('refresh-task').disabled = !editable;
+    $('supplement-form').querySelector('button[type="submit"]').disabled = !editable;
+    $('recommend').disabled = !editable;
     $('customer-link').href = `/customer-store.html?taskId=${encodeURIComponent(current.id)}`;
     if (current.supplement?.storeId) $('store-id').value = current.supplement.storeId;
     if (current.supplement?.modelCode) $('model-code').value = current.supplement.modelCode;
@@ -209,6 +236,24 @@
     if (!data.preview.advisors?.length) listItem($('advisor-list'), '没有可核对的顾问工作量。');
     $('proposal-box').hidden = !proposal;
     if (proposal) $('proposal-expiry').textContent = new Date(proposal.expiresAt).toLocaleString('zh-CN');
+  }
+
+  function renderRestoredProposal(current, saved) {
+    if (!current.preview?.policySourceRefs?.length
+        || !current.preview.advisors?.some(advisor => advisor.advisorId === saved.advisorId)) {
+      throw new Error('保存的政策依据或顾问快照不完整');
+    }
+    proposal = saved;
+    $('advice-result').hidden = false;
+    $('advice-message').textContent = `已恢复顾问 ${saved.advisorId} 的模拟建议。请重新核对下列历史依据；批准时服务端会再次读取工单和政策。`;
+    $('evidence-list').replaceChildren();
+    for (const ref of current.preview.policySourceRefs)
+      listItem($('evidence-list'), '请在仓库核对这条模拟政策原文。', ref);
+    $('advisor-list').replaceChildren();
+    for (const advisor of current.preview.advisors)
+      listItem($('advisor-list'), `顾问 ${advisor.advisorId} · 处理中 ${advisor.processing} 单 · 总计 ${advisor.total} 单 · 门店归属未核实`);
+    $('proposal-expiry').textContent = new Date(saved.expiresAt).toLocaleString('zh-CN');
+    $('proposal-box').hidden = false;
   }
 
   async function act(button, work) {

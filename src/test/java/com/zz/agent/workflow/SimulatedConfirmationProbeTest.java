@@ -31,6 +31,26 @@ class SimulatedConfirmationProbeTest {
     private static final String SOURCE = "data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1";
 
     @Test
+    void pendingProposalCanOnlyBeRestoredByOwnerBeforeExpiry() {
+        Fixture fixture = fixture();
+        JdbcConfirmationStore.Proposal proposal = fixture.proposal();
+
+        assertEquals(proposal.id(), fixture.flow().pending(COOKIE, proposal.taskId()).orElseThrow().id());
+        fixture.car.identity = new CarSystemReadClient.Identity(9002, 2, 0);
+        assertTrue(fixture.flow().pending(COOKIE, proposal.taskId()).isEmpty());
+        fixture.car.identity = new CarSystemReadClient.Identity(9002, 0, 0);
+        assertThrows(SecurityException.class, () -> fixture.flow().pending(COOKIE, proposal.taskId()));
+
+        fixture.car.identity = new CarSystemReadClient.Identity(9001, 2, 0);
+        assertTrue(fixture.flow(Clock.fixed(CLOCK.instant().plusSeconds(601), ZoneOffset.UTC))
+                .pending(COOKIE, proposal.taskId()).isEmpty());
+        fixture.flow().confirm(COOKIE, proposal.taskId(),
+                new ConfirmationCommand(proposal.id().toString(), proposal.taskVersion(), false));
+        assertTrue(fixture.flow().pending(COOKIE, proposal.taskId()).isEmpty());
+        assertEquals(0, fixture.calls.get());
+    }
+
+    @Test
     void confirmationPersistsOneAttemptAndDuplicateDoesNotAssignAgain() {
         Fixture fixture = fixture();
         fixture.behavior = (cookie, order, advisor) -> {

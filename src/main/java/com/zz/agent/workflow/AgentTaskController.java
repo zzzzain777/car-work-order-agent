@@ -98,6 +98,14 @@ public final class AgentTaskController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "任务不存在")));
     }
 
+    @GetMapping("/{taskId}/pending-proposal")
+    public ResponseEntity<JdbcConfirmationStore.Proposal> pendingProposal(
+            @RequestHeader(value = HttpHeaders.COOKIE, required = false) String cookieHeader,
+            @PathVariable UUID taskId) {
+        return noStore(confirmations.pending(cookieHeader, taskId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "没有有效的待确认提案")));
+    }
+
     @PostMapping("/{taskId}/supplement")
     public ResponseEntity<JdbcAgentTaskStore.Task> supplement(
             @RequestHeader(value = HttpHeaders.COOKIE, required = false) String cookieHeader,

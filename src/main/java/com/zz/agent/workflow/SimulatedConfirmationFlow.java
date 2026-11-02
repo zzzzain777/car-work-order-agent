@@ -61,6 +61,16 @@ public final class SimulatedConfirmationFlow {
                 evidenceDigest(recommendation.preview().policyEvidence()), clock.instant().plus(PROPOSAL_TTL));
     }
 
+    /** 页面刷新后只恢复本人、当前版本且尚未过期的模拟提案。 */
+    public Optional<JdbcConfirmationStore.Proposal> pending(String cookieHeader, UUID taskId) {
+        long adminId = requireAdmin(cookieHeader);
+        if (taskId == null) {
+            return Optional.empty();
+        }
+        return confirmations.findPendingProposal(taskId, adminId)
+                .filter(proposal -> clock.instant().isBefore(proposal.expiresAt()));
+    }
+
     public Decision confirm(String cookieHeader, UUID taskId, ConfirmationCommand command) {
         long adminId = requireAdmin(cookieHeader);
         if (taskId == null || command == null || command.version() < 0) {

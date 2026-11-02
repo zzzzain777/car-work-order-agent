@@ -104,6 +104,17 @@ public final class JdbcConfirmationStore {
                 """, proposalMapper, taskId, adminId, proposalId).stream().findFirst();
     }
 
+    /** 只读取当前任务版本仍在等待确认的提案；历史提案不能被页面恢复。 */
+    public Optional<Proposal> findPendingProposal(UUID taskId, long adminId) {
+        return jdbc.query("""
+                SELECT p.proposal_id, p.task_id, p.task_version, p.advisor_id,
+                       p.evidence_digest, p.expires_at
+                FROM agent_proposal p JOIN agent_task t ON t.task_id = p.task_id
+                WHERE p.task_id = ? AND t.admin_id = ? AND t.state = 'AWAITING_CONFIRMATION'
+                  AND p.task_version = t.version
+                """, proposalMapper, taskId, adminId).stream().findFirst();
+    }
+
     public Optional<Attempt> findAttempt(UUID taskId, long adminId, UUID proposalId) {
         return jdbc.query("""
                 SELECT a.attempt_id, a.proposal_id, a.state, a.observation
