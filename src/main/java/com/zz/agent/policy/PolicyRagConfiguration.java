@@ -20,6 +20,7 @@ import com.zz.agent.workflow.SimulatedAssignmentPort;
 import com.zz.agent.workflow.SimulatedConfirmationFlow;
 import com.zz.agent.workflow.StructuredAdviceService;
 import com.zz.agent.workflow.PolicyRiskReviewService;
+import com.zz.agent.workflow.PolicyRiskDiagnosticFileSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -177,8 +178,12 @@ public class PolicyRagConfiguration {
 
     @Bean
     @Profile("deepseek")
-    PolicyRiskReviewService policyRiskReviewService(StructuredAdviceService.AdviceModel model, ObjectMapper json) {
-        return new PolicyRiskReviewService(model, json);
+    PolicyRiskReviewService policyRiskReviewService(StructuredAdviceService.AdviceModel model, ObjectMapper json,
+            @Value("${agent.policy-risk.diagnostics.enabled:false}") boolean diagnosticsEnabled) {
+        return diagnosticsEnabled
+                ? new PolicyRiskReviewService(model, json,
+                        new PolicyRiskDiagnosticFileSink(json, Path.of("target/diagnostics/policy-risk-app.jsonl")))
+                : new PolicyRiskReviewService(model, json);
     }
 
     @Bean

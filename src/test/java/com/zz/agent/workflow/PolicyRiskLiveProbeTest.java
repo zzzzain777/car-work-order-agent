@@ -52,7 +52,8 @@ class PolicyRiskLiveProbeTest {
                     usage == null || usage.getPromptTokens() == null ? 0 : usage.getPromptTokens().longValue(),
                     usage == null || usage.getCompletionTokens() == null ? 0
                             : usage.getCompletionTokens().longValue());
-        }, json);
+        }, json, new PolicyRiskDiagnosticFileSink(json,
+                Path.of("target/diagnostics/policy-risk-probe.jsonl")));
 
         PolicyRiskReviewService.Review review = service.assess(evidence, "STORE-A", "MX-7",
                 OffsetDateTime.parse("2026-11-07T14:00:00+08:00"), true);

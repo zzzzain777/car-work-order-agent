@@ -9,15 +9,17 @@ import com.zz.agent.policy.PolicyEvidenceGate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /** 模型只给出政策风险提示；任何无法核对的输出都交给管理员。 */
 public final class PolicyRiskReviewService {
 
-    public static final String PROMPT_VERSION = "policy-risk-v2";
+    public static final String PROMPT_VERSION = "policy-risk-v3";
     private static final ZoneId POLICY_ZONE = ZoneId.of("Asia/Shanghai");
     private static final Pattern DAILY_ALLOWANCE = Pattern.compile(
             "可落在每日\\s*((?:[01]\\d|2[0-3]):[0-5]\\d)（含）至\\s*"
@@ -43,12 +45,24 @@ public final class PolicyRiskReviewService {
                          String promptVersion, String modelId, long promptTokens, long completionTokens) {
     }
 
+    /** 仅供显式启用的本机诊断使用；输入不含客户编号、坐标或登录凭据。 */
+    public record ModelExchange(String promptVersion, String systemPrompt, String userPrompt,
+                                String rawOutput, String modelId, long promptTokens, long completionTokens) {
+    }
+
     private final StructuredAdviceService.AdviceModel model;
     private final ObjectMapper json;
+    private final Consumer<ModelExchange> diagnosticSink;
 
     public PolicyRiskReviewService(StructuredAdviceService.AdviceModel model, ObjectMapper json) {
+        this(model, json, ignored -> { });
+    }
+
+    public PolicyRiskReviewService(StructuredAdviceService.AdviceModel model, ObjectMapper json,
+                                   Consumer<ModelExchange> diagnosticSink) {
         this.model = Objects.requireNonNull(model, "模型不能为空");
         this.json = Objects.requireNonNull(json, "JSON 编解码器不能为空");
+        this.diagnosticSink = Objects.requireNonNull(diagnosticSink, "诊断记录器不能为空");
     }
 
     public Review assess(PolicyEvidenceGate.Evidence evidence, String storeId,
@@ -70,10 +84,14 @@ public final class PolicyRiskReviewService {
         }
         String input;
         try {
-            input = json.writeValueAsString(Map.of("sourceRef", evidence.sourceRef(),
-                    "policyText", evidence.text(), "storeId", storeId,
-                    "modelCode", modelCode, "appointmentAt", appointmentAt.toString(),
-                    "customerSelectionRecorded", true));
+            Map<String, Object> fields = new LinkedHashMap<>();
+            fields.put("sourceRef", evidence.sourceRef());
+            fields.put("policyText", evidence.text());
+            fields.put("storeId", storeId);
+            fields.put("modelCode", modelCode);
+            fields.put("appointmentAt", appointmentAt.atZoneSameInstant(POLICY_ZONE).toOffsetDateTime().toString());
+            fields.put("customerSelectionRecorded", true);
+            input = json.writeValueAsString(fields);
         } catch (JsonProcessingException error) {
             return unknown("政策风险输入编码失败，需人工核对", null);
         }
@@ -82,6 +100,15 @@ public final class PolicyRiskReviewService {
             completion = model.complete(SYSTEM_PROMPT, input);
         } catch (RuntimeException error) {
             return unknown("政策风险模型不可用，需人工核对", null);
+        }
+        try {
+            diagnosticSink.accept(new ModelExchange(PROMPT_VERSION, SYSTEM_PROMPT, input,
+                    completion == null ? null : completion.text(),
+                    completion == null ? null : completion.modelId(),
+                    completion == null ? 0 : completion.promptTokens(),
+                    completion == null ? 0 : completion.completionTokens()));
+        } catch (RuntimeException ignored) {
+            // 本机诊断写入失败不能改变政策判断，也不能放宽确认门槛。
         }
         if (completion == null || completion.text() == null || completion.text().length() > 4000
                 || completion.promptTokens() < 0 || completion.completionTokens() < 0) {

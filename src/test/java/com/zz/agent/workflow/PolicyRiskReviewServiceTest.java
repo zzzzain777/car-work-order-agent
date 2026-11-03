@@ -6,7 +6,9 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -36,6 +38,43 @@ class PolicyRiskReviewServiceTest {
         assertEquals(PolicyRiskReviewService.Verdict.UNKNOWN, review.verdict());
         assertTrue(review.message().contains("客户本人选店"));
         assertEquals(0, calls.get());
+    }
+
+    @Test
+    void diagnosticCapturesExactPromptsAndRawModelOutput() {
+        AtomicReference<PolicyRiskReviewService.ModelExchange> captured = new AtomicReference<>();
+        String raw = "{\"verdict\":\"DENY\",\"quote\":\"每日 10:00（含）至 17:00（不含）\"}";
+        PolicyRiskReviewService service = new PolicyRiskReviewService((system, user) ->
+                new StructuredAdviceService.Completion(raw, "fake", 5, 4),
+                new ObjectMapper(), captured::set);
+
+        service.assess(EVIDENCE, "STORE-A", "MX-7",
+                OffsetDateTime.parse("2026-11-07T14:00:00+08:00"), true);
+
+        assertEquals(PolicyRiskReviewService.PROMPT_VERSION, captured.get().promptVersion());
+        assertTrue(captured.get().systemPrompt().contains("customerSelectionRecorded"));
+        assertTrue(captured.get().userPrompt().contains("\"customerSelectionRecorded\":true"));
+        assertEquals(raw, captured.get().rawOutput());
+        assertEquals(5, captured.get().promptTokens());
+    }
+
+    @Test
+    void sameInstantUsesPolicyTimezoneInModelInput() {
+        var prompts = new ArrayList<String>();
+        PolicyRiskReviewService service = new PolicyRiskReviewService((system, user) -> {
+            prompts.add(user);
+            return new StructuredAdviceService.Completion("""
+                    {"verdict":"ALLOW","quote":"每日 10:00（含）至 17:00（不含）"}
+                    """, "fake", 1, 1);
+        }, new ObjectMapper());
+
+        service.assess(EVIDENCE, "STORE-A", "MX-7",
+                OffsetDateTime.parse("2026-11-07T06:00:00Z"), true);
+        service.assess(EVIDENCE, "STORE-A", "MX-7",
+                OffsetDateTime.parse("2026-11-07T14:00:00+08:00"), true);
+
+        assertEquals(prompts.get(0), prompts.get(1));
+        assertTrue(prompts.get(0).contains("\"appointmentAt\":\"2026-11-07T14:00+08:00\""));
     }
 
     @Test
