@@ -138,7 +138,7 @@
     return `${value}${value.length === 16 ? ':00' : ''}+08:00`;
   }
 
-  async function api(path, method = 'GET', body = null) {
+  async function api(path, method = 'GET', body = null, acceptStaleDecision = false) {
     const headers = {};
     if (method !== 'GET') {
       headers['Content-Type'] = 'application/json';
@@ -149,7 +149,10 @@
       body: body === null ? undefined : JSON.stringify(body)
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.message || data.detail || `请求失败（${response.status}）`);
+    if (!response.ok && !(acceptStaleDecision && response.status === 409
+        && data.state === 'STALE_PROPOSAL')) {
+      throw new Error(data.message || data.detail || `请求失败（${response.status}）`);
+    }
     return data;
   }
 
@@ -377,6 +380,8 @@
     showStatus(proposal ? '建议已生成，等待管理员核对。' : '当前证据不足，请按提示人工核对。');
   }));
   function decisionMessage(outcome, approve) {
+    if (outcome.state === 'STALE_PROPOSAL')
+      return '提案已过期或失效，请重新创建任务；未调用模拟分配端。';
     if (!approve) return '管理员已拒绝这条建议；未调用模拟分配端。';
     const observations = {
       UNCHANGED: '工单重查未变化', TARGET_ASSIGNED: '重查发现目标顾问已分配',
@@ -402,11 +407,13 @@
     await act(button, async () => {
       const outcome = await api(`/api/agent/tasks/${task.id}/decision`, 'POST', {
         proposalId: proposal.id, version: proposal.taskVersion, approve
-      });
+      }, true);
       $('result-panel').hidden = false;
       $('result-text').textContent = decisionMessage(outcome, approve);
       $('proposal-box').hidden = true;
       renderTask(await api(`/api/agent/tasks/${task.id}`));
+      proposal = null;
+      if (outcome.state === 'STALE_PROPOSAL') showStatus('提案已过期或失效，请重新创建任务。', true);
     });
   }
   $('approve').addEventListener('click', () => decide(true, $('approve')));
