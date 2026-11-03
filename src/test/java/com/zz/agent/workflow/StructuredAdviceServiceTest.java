@@ -21,14 +21,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class StructuredAdviceServiceTest {
 
     private static final String SOURCE = "data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1";
-    private static final String RULE = "STORE-A 的 MX-7 在工作日 10:00 至 17:00 接受试驾申请。门店选择不代表预约成功。示例时间：2026-11-07T14:00:00+08:00。";
+    private static final String RULE = "STORE-A 的 MX-7 试驾申请时间可落在每日 10:00（含）至 17:00（不含），按 Asia/Shanghai 时区判断。门店选择不代表预约成功。示例时间：2026-11-07T14:00:00+08:00。";
     private static final String SECOND_SOURCE = "data/policies/STORE-A-MX-7-test-drive-v1.md#rule-2";
     private static final String SECOND_RULE = "STORE-A 的 MX-7 如需改期，至少提前一天联系门店。";
     private static final String VALID_JSON = """
-            {"advisorId":301,"citations":[{"sourceRef":"%s","quote":"工作日 10:00 至 17:00 接受试驾申请"}]}
+            {"advisorId":301,"citations":[{"sourceRef":"%s","quote":"试驾申请时间可落在每日 10:00（含）至 17:00（不含）"}]}
             """.formatted(SOURCE);
     private static final String DUPLICATE_SOURCE_JSON = """
-            {"advisorId":301,"citations":[{"sourceRef":"%s","quote":"工作日 10:00 至 17:00 接受试驾申请"},{"sourceRef":"%s","quote":"工作日 10:00 至 17:00 接受试驾申请"}]}
+            {"advisorId":301,"citations":[{"sourceRef":"%s","quote":"试驾申请时间可落在每日 10:00（含）至 17:00（不含）"},{"sourceRef":"%s","quote":"试驾申请时间可落在每日 10:00（含）至 17:00（不含）"}]}
             """.formatted(SOURCE, SOURCE);
 
     @Test
@@ -47,7 +47,7 @@ class StructuredAdviceServiceTest {
         assertEquals(301L, advice.advisorId());
         assertEquals(1, advice.processing());
         assertEquals(SOURCE, advice.citations().getFirst().sourceRef());
-        assertEquals("工作日 10:00 至 17:00 接受试驾申请", advice.citations().getFirst().quote());
+        assertEquals("试驾申请时间可落在每日 10:00（含）至 17:00（不含）", advice.citations().getFirst().quote());
         assertEquals("deepseek-flash", advice.modelId());
         assertEquals(120, advice.promptTokens());
         assertEquals(35, advice.completionTokens());
@@ -59,6 +59,49 @@ class StructuredAdviceServiceTest {
         assertFalse(userPrompt.get().contains("顾问张三"));
         assertFalse(userPrompt.get().contains("SESSION="));
         assertFalse(userPrompt.get().contains("9001"));
+    }
+
+    @Test
+    void appointmentAtExcludedUpperBoundaryStopsBeforeCallingModel() {
+        AtomicInteger calls = new AtomicInteger();
+        StructuredAdviceService service = new StructuredAdviceService((system, user) -> {
+            calls.incrementAndGet();
+            return new StructuredAdviceService.Completion(VALID_JSON, "deepseek-flash", 120, 35);
+        }, new ObjectMapper());
+
+        StructuredAdviceService.Advice advice = service.suggest(readyAt("2026-11-07T17:00:00+08:00"));
+
+        assertEquals(StructuredAdviceService.Outcome.NEEDS_REVIEW, advice.outcome());
+        assertEquals(0, calls.get());
+    }
+
+    @Test
+    void appointmentAtIncludedLowerBoundaryCanUseThePolicy() {
+        StructuredAdviceService service = new StructuredAdviceService((system, user) ->
+                new StructuredAdviceService.Completion(VALID_JSON, "deepseek-flash", 120, 35),
+                new ObjectMapper());
+
+        assertEquals(StructuredAdviceService.Outcome.CANDIDATE,
+                service.suggest(readyAt("2026-11-07T10:00:00+08:00")).outcome());
+        assertEquals(StructuredAdviceService.Outcome.CANDIDATE,
+                service.suggest(readyAt("2026-11-07T08:00:00Z")).outcome());
+    }
+
+    @Test
+    void appointmentOutsideTheWindowStopsBeforeCallingModel() {
+        AtomicInteger calls = new AtomicInteger();
+        StructuredAdviceService service = new StructuredAdviceService((system, user) -> {
+            calls.incrementAndGet();
+            return new StructuredAdviceService.Completion(VALID_JSON, "deepseek-flash", 120, 35);
+        }, new ObjectMapper());
+
+        assertEquals(StructuredAdviceService.Outcome.NEEDS_REVIEW,
+                service.suggest(readyAt("2026-11-07T09:59:59+08:00")).outcome());
+        assertEquals(StructuredAdviceService.Outcome.CANDIDATE,
+                service.suggest(readyAt("2026-11-07T16:59:59+08:00")).outcome());
+        assertEquals(StructuredAdviceService.Outcome.NEEDS_REVIEW,
+                service.suggest(readyAt("2026-11-07T09:00:00Z")).outcome());
+        assertEquals(1, calls.get());
     }
 
     @Test
@@ -90,7 +133,7 @@ class StructuredAdviceServiceTest {
 
         assertEquals(StructuredAdviceService.Outcome.CANDIDATE, advice.outcome());
         assertEquals(List.of(new StructuredAdviceService.Citation(SOURCE,
-                "工作日 10:00 至 17:00 接受试驾申请")), advice.citations());
+                "试驾申请时间可落在每日 10:00（含）至 17:00（不含）")), advice.citations());
     }
 
     @Test
@@ -161,7 +204,7 @@ class StructuredAdviceServiceTest {
         List<String> invalid = List.of(
                 VALID_JSON.replace("\"advisorId\":301", "\"advisorId\":999"),
                 VALID_JSON.replace(SOURCE, "data/policies/OTHER.md#rule-1"),
-                VALID_JSON.replace("工作日 10:00 至 17:00 接受试驾申请", "任何时间都保证有现车"),
+                VALID_JSON.replace("试驾申请时间可落在每日 10:00（含）至 17:00（不含）", "任何时间都保证有现车"),
                 VALID_JSON.replace("}]}", "}],\"assignmentEnabled\":true}"),
                 "```json\n" + VALID_JSON + "\n```",
                 VALID_JSON + "\n实际可直接分配");
@@ -269,6 +312,17 @@ class StructuredAdviceServiceTest {
                 new JdbcAgentTaskStore.Preview(ReadOnlyAdviceFlow.Stage.READY_FOR_ADMIN_REVIEW,
                         List.of(SOURCE), List.of(new JdbcAgentTaskStore.AdvisorSnapshot(301, 1, 3, false)), at), at);
         return new AgentTaskWorkflow.Refresh(task, result);
+    }
+
+    private static AgentTaskWorkflow.Refresh readyAt(String appointmentAt) {
+        AgentTaskWorkflow.Refresh base = ready();
+        JdbcAgentTaskStore.Task old = base.task();
+        JdbcAgentTaskStore.Task task = new JdbcAgentTaskStore.Task(old.id(), old.adminId(), old.workOrderId(),
+                old.orderType(), old.orderStatus(), old.orderAdvisorId(), old.orderUpdatedAt(), old.version(),
+                old.state(), new ReadOnlyAdviceFlow.Supplement(old.supplement().storeId(),
+                        old.supplement().modelCode(), OffsetDateTime.parse(appointmentAt)),
+                old.preview(), old.updatedAt());
+        return new AgentTaskWorkflow.Refresh(task, base.result());
     }
 
     private static AgentTaskWorkflow.Refresh readyWithAdvisors(int count) {
