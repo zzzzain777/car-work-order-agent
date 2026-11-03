@@ -1,0 +1,10 @@
+# scope=policy-semantics-v1
+# inputSha256=fef008ad8767188c6a5cc476ad9ccf3ee757c40e957d42098abb476aef363a86
+# systemPromptSha256=9073e59bf357971e78e6c1ce7141ea9ef761bc46eb906335b6724e1c70c64a29
+caseId	expectedVerdict	actualVerdict	requiredQuoteText	actualQuote	quoteInSource	containsRequiredText	modelId	promptTokens	completionTokens	elapsedMs	pass
+S01	ALLOW	ALLOW	每日 10:00（含）至 17:00（不含）	STORE-A 的 MX-7 试驾申请时间为每日 10:00（含）至 17:00（不含），按 Asia/Shanghai 时区判断。	true	true	deepseek-flash	232	49	1276	PASS
+S02	DENY	DENY	2026-11-07 全天暂停试驾申请	但 2026-11-07 全天暂停试驾申请。	true	true	deepseek-flash	234	25	883	PASS
+S03	NEEDS_INFO	NEEDS_INFO	驾龄须满一年	申请人必须持有效驾驶证，且驾龄须满一年；未知驾龄时应先补充资料。	true	true	deepseek-flash	240	32	576	PASS
+# exactCasePass=3/3
+# reportedPromptTokens=706
+# reportedCompletionTokens=106
