@@ -1,0 +1,11 @@
+# scope=structured-advice-rules-vs-model-v1
+# inputSha256=133afcfdc6f3d1a0cc7b55f70a4c907630cac30a3eb52a06f3455b2baadd19cf
+# corpusSha256=c2b198f738c2514e324e24033634c622f324a863ee0a96d3213697fa83087cf0
+# modelSnapshot=structured-advice-live-v2.tsv
+caseId	expectedOutcome	ruleOutcome	modelOutcome	expectedAdvisorId	ruleAdvisorId	modelAdvisorId	expectedCitationRef	ruleCitationRef	modelCitationRef	ruleQuote	ruleElapsedNs	modelCalls	modelPromptTokens	modelCompletionTokens	modelElapsedMs	rulePass	modelPass	agree
+A01-normal	CANDIDATE	CANDIDATE	CANDIDATE	301	301	301	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	10:00（含）至 17:00（不含）	446041	1	379	56	1440	PASS	PASS	true
+A02-multiple-chunks	CANDIDATE	CANDIDATE	CANDIDATE	301	301	301	data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1	10:00（含）至 17:00（不含）	88750	1	360	61	764	PASS	PASS	true
+A03-wrong-top-chunk	NEEDS_REVIEW	NEEDS_REVIEW	NEEDS_REVIEW	-	-	-	-	-	-	-	43417	0	0	0	0	PASS	PASS	true
+# ruleExactCasePass=3/3
+# modelExactCasePass=3/3
+# outcomeAdvisorCitationAgreement=3/3

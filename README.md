@@ -34,6 +34,8 @@ Java 21 + Spring Boot 3.5.8 是当前**可启动骨架**的版本；pgvector 已
 
 [三例真实模型结构化建议切片评测](docs/verification/stage-1/structured-advice-live-evaluation.md)保留了优化前后两轮逐例结果：两例生成候选，一例在错误首位政策片段下转人工；新版在该反例中不再调用模型。它不包含真实检索或完整 Agent 成绩。
 
+[同案例规则与模型对照](docs/verification/stage-1/structured-advice-ab-evaluation.md)显示这三个窄场景下两者结果一致；目前没有测出模型相对规则的准确性增益，后续须用更难的预先固定案例验证模型职责。
+
 ## 参考项目取舍
 
 此前对 Spring AI Alibaba、LangGraph、Dify、Langfuse 的架构调研及本项目的实施顺序见[高 Star Agent 架构借鉴](docs/verification/high-star-agent-architecture-review.md)。鱼皮公开的 `yu-ai-agent` 适合作为 Spring AI 与 RAG 的学习材料；其具体取舍另见[模板适配评审](docs/verification/yu-ai-agent-template-review.md)。
