@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zz.agent.policy.PolicyEvidenceGate;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -66,6 +67,53 @@ class PolicyRiskReviewServiceTest {
                 service.assess(EVIDENCE, "STORE-A", "MX-7",
                         OffsetDateTime.parse("2026-11-07T14:00:00+08:00")).verdict());
         assertEquals(1, calls.get());
+    }
+
+    @Test
+    void observedDenialCitingOnlyAllowedWindowNeedsHumanReview() throws Exception {
+        ObjectMapper json = new ObjectMapper();
+        var fixed = json.readTree(Path.of("data/eval/workflow/policy-risk-contradictory-denial-v1.json").toFile());
+        var evidence = new PolicyEvidenceGate.Evidence("fixed-pr09", "POL-STORE-A-MX-7-TEST", 1,
+                fixed.path("sourceRef").asText(), fixed.path("policyText").asText());
+        var response = fixed.path("modelOutput");
+        var service = service(response.toString());
+
+        var review = service.assess(evidence, fixed.path("storeId").asText(),
+                fixed.path("modelCode").asText(), OffsetDateTime.parse(fixed.path("appointmentAt").asText()));
+
+        assertEquals(PolicyRiskReviewService.Verdict.UNKNOWN, review.verdict());
+        assertEquals(evidence.sourceRef(), review.sourceRef());
+        assertEquals(response.path("quote").asText(), review.quote());
+        assertTrue(review.message().contains("引用"));
+    }
+
+    @Test
+    void outsideCitedWindowCanStillBeDenied() throws Exception {
+        ObjectMapper json = new ObjectMapper();
+        var fixed = json.readTree(Path.of("data/eval/workflow/policy-risk-contradictory-denial-v1.json").toFile());
+        var evidence = new PolicyEvidenceGate.Evidence("fixed-pr09", "POL-STORE-A-MX-7-TEST", 1,
+                fixed.path("sourceRef").asText(), fixed.path("policyText").asText());
+
+        var review = service(fixed.path("modelOutput").toString()).assess(evidence, "STORE-A", "MX-7",
+                OffsetDateTime.parse("2026-11-07T18:00:00+08:00"));
+
+        assertEquals(PolicyRiskReviewService.Verdict.DENY, review.verdict());
+    }
+
+    @Test
+    void quoteIncludingSeparateRequiredConditionIsNotMistakenForTimeOnlyQuote() throws Exception {
+        ObjectMapper json = new ObjectMapper();
+        var fixed = json.readTree(Path.of("data/eval/workflow/policy-risk-contradictory-denial-v1.json").toFile());
+        var evidence = new PolicyEvidenceGate.Evidence("fixed-pr09", "POL-STORE-A-MX-7-TEST", 1,
+                fixed.path("sourceRef").asText(), fixed.path("policyText").asText());
+        String citedRequirement = "在 `STORE-A`，`MX-7` 的试驾申请时间可落在每日 10:00（含）至 17:00（不含），"
+                + "按 `Asia/Shanghai` 时区判断。顾客必须先选定门店和准确试驾时间。";
+
+        var review = service("{\"verdict\":\"DENY\",\"quote\":"
+                + json.writeValueAsString(citedRequirement) + "}").assess(evidence, "STORE-A", "MX-7",
+                OffsetDateTime.parse("2026-11-07T14:00:00+08:00"));
+
+        assertEquals(PolicyRiskReviewService.Verdict.DENY, review.verdict());
     }
 
     private static PolicyRiskReviewService service(String output) {
