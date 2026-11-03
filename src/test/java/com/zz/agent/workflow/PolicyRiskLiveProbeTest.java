@@ -5,7 +5,7 @@ import com.zz.agent.model.ModelTextGenerator;
 import com.zz.agent.policy.PolicyEvidenceGate;
 import com.zz.agent.policy.PolicySourceLoader;
 import com.zz.agent.policy.PolicyVectorDocumentMapper;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +30,7 @@ class PolicyRiskLiveProbeTest {
     @Autowired
     private ObjectMapper json;
 
-    @Test
+    @RepeatedTest(3)
     void currentSimplePolicyCanProduceCitedReadOnlyAllowance() throws Exception {
         var document = new PolicyVectorDocumentMapper()
                 .map(new PolicySourceLoader().load(Path.of("data/policies"))).stream()
@@ -55,7 +55,7 @@ class PolicyRiskLiveProbeTest {
         }, json);
 
         PolicyRiskReviewService.Review review = service.assess(evidence, "STORE-A", "MX-7",
-                OffsetDateTime.parse("2026-11-07T14:00:00+08:00"));
+                OffsetDateTime.parse("2026-11-07T14:00:00+08:00"), true);
 
         assertEquals(PolicyRiskReviewService.Verdict.ALLOW, review.verdict(), review.message());
         assertEquals(evidence.sourceRef(), review.sourceRef());

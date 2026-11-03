@@ -21,13 +21,34 @@ class PolicyRiskReviewServiceTest {
             new PolicyEvidenceGate.Evidence("chunk-1", "POL-A", 1, SOURCE, TEXT);
 
     @Test
-    void acceptsCitedReadOnlyRiskVerdict() {
-        PolicyRiskReviewService service = service("""
-                {"verdict":"ALLOW","quote":"每日 10:00（含）至 17:00（不含）"}
-                """);
+    void missingVerifiedCustomerChoiceStopsBeforeRiskModel() {
+        AtomicInteger calls = new AtomicInteger();
+        PolicyRiskReviewService service = new PolicyRiskReviewService((system, user) -> {
+            calls.incrementAndGet();
+            return new StructuredAdviceService.Completion("""
+                    {"verdict":"ALLOW","quote":"每日 10:00（含）至 17:00（不含）"}
+                    """, "fake", 1, 1);
+        }, new ObjectMapper());
 
         PolicyRiskReviewService.Review review = service.assess(EVIDENCE, "STORE-A", "MX-7",
                 OffsetDateTime.parse("2026-11-07T14:00:00+08:00"));
+
+        assertEquals(PolicyRiskReviewService.Verdict.UNKNOWN, review.verdict());
+        assertTrue(review.message().contains("客户本人选店"));
+        assertEquals(0, calls.get());
+    }
+
+    @Test
+    void acceptsCitedReadOnlyRiskVerdict() {
+        PolicyRiskReviewService service = new PolicyRiskReviewService((system, user) -> {
+            assertTrue(user.contains("\"customerSelectionRecorded\":true"));
+            return new StructuredAdviceService.Completion("""
+                    {"verdict":"ALLOW","quote":"每日 10:00（含）至 17:00（不含）"}
+                    """, "deepseek-flash", 80, 20);
+        }, new ObjectMapper());
+
+        PolicyRiskReviewService.Review review = service.assess(EVIDENCE, "STORE-A", "MX-7",
+                OffsetDateTime.parse("2026-11-07T14:00:00+08:00"), true);
 
         assertEquals(PolicyRiskReviewService.Verdict.ALLOW, review.verdict());
         assertEquals(SOURCE, review.sourceRef());
@@ -44,7 +65,7 @@ class PolicyRiskReviewServiceTest {
                 "{\"verdict\":\"ALLOW\",\"quote\":\"每日 10:00（含）至 17:00（不含）\",\"approve\":true}",
                 "{\"verdict\":\"OTHER\",\"quote\":\"每日 10:00（含）至 17:00（不含）\"}"}) {
             PolicyRiskReviewService.Review review = service(output).assess(EVIDENCE, "STORE-A", "MX-7",
-                    OffsetDateTime.parse("2026-11-07T14:00:00+08:00"));
+                    OffsetDateTime.parse("2026-11-07T14:00:00+08:00"), true);
             assertEquals(PolicyRiskReviewService.Verdict.UNKNOWN, review.verdict());
             assertNull(review.sourceRef());
             assertNull(review.quote());
@@ -61,11 +82,11 @@ class PolicyRiskReviewServiceTest {
 
         assertEquals(PolicyRiskReviewService.Verdict.UNKNOWN,
                 service.assess(null, "STORE-A", "MX-7",
-                        OffsetDateTime.parse("2026-11-07T14:00:00+08:00")).verdict());
+                        OffsetDateTime.parse("2026-11-07T14:00:00+08:00"), true).verdict());
         assertEquals(0, calls.get());
         assertEquals(PolicyRiskReviewService.Verdict.UNKNOWN,
                 service.assess(EVIDENCE, "STORE-A", "MX-7",
-                        OffsetDateTime.parse("2026-11-07T14:00:00+08:00")).verdict());
+                        OffsetDateTime.parse("2026-11-07T14:00:00+08:00"), true).verdict());
         assertEquals(1, calls.get());
     }
 
@@ -79,7 +100,7 @@ class PolicyRiskReviewServiceTest {
         var service = service(response.toString());
 
         var review = service.assess(evidence, fixed.path("storeId").asText(),
-                fixed.path("modelCode").asText(), OffsetDateTime.parse(fixed.path("appointmentAt").asText()));
+                fixed.path("modelCode").asText(), OffsetDateTime.parse(fixed.path("appointmentAt").asText()), true);
 
         assertEquals(PolicyRiskReviewService.Verdict.UNKNOWN, review.verdict());
         assertEquals(evidence.sourceRef(), review.sourceRef());
@@ -95,7 +116,7 @@ class PolicyRiskReviewServiceTest {
                 fixed.path("sourceRef").asText(), fixed.path("policyText").asText());
 
         var review = service(fixed.path("modelOutput").toString()).assess(evidence, "STORE-A", "MX-7",
-                OffsetDateTime.parse("2026-11-07T18:00:00+08:00"));
+                OffsetDateTime.parse("2026-11-07T18:00:00+08:00"), true);
 
         assertEquals(PolicyRiskReviewService.Verdict.DENY, review.verdict());
     }
@@ -111,7 +132,7 @@ class PolicyRiskReviewServiceTest {
 
         var review = service("{\"verdict\":\"DENY\",\"quote\":"
                 + json.writeValueAsString(citedRequirement) + "}").assess(evidence, "STORE-A", "MX-7",
-                OffsetDateTime.parse("2026-11-07T14:00:00+08:00"));
+                OffsetDateTime.parse("2026-11-07T14:00:00+08:00"), true);
 
         assertEquals(PolicyRiskReviewService.Verdict.DENY, review.verdict());
     }

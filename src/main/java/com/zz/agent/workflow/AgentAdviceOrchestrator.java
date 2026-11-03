@@ -32,7 +32,8 @@ public final class AgentAdviceOrchestrator {
                     var supplement = refreshed.task().supplement();
                     PolicyRiskReviewService.Review review = policyRisk.assess(
                             refreshed.result().policyEvidence().getFirst(), supplement.storeId(),
-                            supplement.modelCode(), supplement.appointmentAt());
+                            supplement.modelCode(), supplement.appointmentAt(),
+                            refreshed.task().storeChoice() != null);
                     return new Recommendation(refreshed.task(), refreshed.result(), initial.withPolicyRisk(review));
                 });
     }

@@ -109,7 +109,7 @@ class AgentTaskWorkflowProbeTest {
     }
 
     @Test
-    void completeTaskRefreshProducesValidatedModelCandidate() {
+    void administratorSupplementWithoutCustomerChoiceNeedsReview() {
         FakeCarSystem car = new FakeCarSystem();
         AgentTaskWorkflow workflow = workflow(car, new PolicyStub(), store());
         JdbcAgentTaskStore.Task task = workflow.open(COOKIE, 1001);
@@ -122,15 +122,24 @@ class AgentTaskWorkflowProbeTest {
                     "quote":"试驾申请时间可落在每日 10:00（含）至 17:00（不含）"}]}
                     """, "deepseek-flash", 20, 10);
         }, new ObjectMapper());
-        AgentAdviceOrchestrator orchestrator = new AgentAdviceOrchestrator(workflow, advice, risk());
+        AtomicInteger riskCalls = new AtomicInteger();
+        PolicyRiskReviewService risk = new PolicyRiskReviewService((system, user) -> {
+            riskCalls.incrementAndGet();
+            return new StructuredAdviceService.Completion("""
+                    {"verdict":"ALLOW","quote":"试驾申请时间可落在每日 10:00（含）至 17:00（不含）"}
+                    """, "fake", 1, 1);
+        }, new ObjectMapper());
+        AgentAdviceOrchestrator orchestrator = new AgentAdviceOrchestrator(workflow, advice, risk);
 
         AgentAdviceOrchestrator.Recommendation result = orchestrator.refreshAndSuggest(COOKIE, task.id(), 1)
                 .orElseThrow();
 
         assertEquals(TaskState.READY_FOR_ADMIN_REVIEW, result.task().state());
-        assertEquals(StructuredAdviceService.Outcome.CANDIDATE, result.advice().outcome());
-        assertEquals(301L, result.advice().advisorId());
+        assertEquals(StructuredAdviceService.Outcome.NEEDS_REVIEW, result.advice().outcome());
+        assertEquals(PolicyRiskReviewService.Verdict.UNKNOWN, result.advice().policyRisk().verdict());
+        assertTrue(result.advice().message().contains("客户本人选店"));
         assertEquals(1, modelCalls.get());
+        assertEquals(0, riskCalls.get());
     }
 
     @Test

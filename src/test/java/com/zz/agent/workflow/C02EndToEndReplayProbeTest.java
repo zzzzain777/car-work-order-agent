@@ -105,10 +105,12 @@ class C02EndToEndReplayProbeTest {
         }, json);
         AgentAdviceOrchestrator.Recommendation recommendation =
                 new AgentAdviceOrchestrator(workflow, advice,
-                        new PolicyRiskReviewService((system, user) ->
-                                new StructuredAdviceService.Completion("""
+                        new PolicyRiskReviewService((system, user) -> {
+                            assertTrue(user.contains("\"customerSelectionRecorded\":true"));
+                            return new StructuredAdviceService.Completion("""
                                         {"verdict":"ALLOW","quote":"试驾申请时间可落在每日 10:00（含）至 17:00（不含）"}
-                                        """, "offline-deterministic-fixture", 0, 0), json))
+                                        """, "offline-deterministic-fixture", 0, 0);
+                        }, json))
                         .refreshAndSuggest(ADMIN, opened.id(), chosen.version()).orElseThrow();
         assertEquals(TaskState.READY_FOR_ADMIN_REVIEW, recommendation.task().state());
         assertEquals(ReadOnlyAdviceFlow.Stage.READY_FOR_ADMIN_REVIEW, recommendation.preview().stage());
