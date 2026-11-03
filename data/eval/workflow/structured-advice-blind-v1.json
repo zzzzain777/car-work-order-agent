@@ -1,0 +1,67 @@
+{
+  "scope": "structured-advice-blind-v1",
+  "asOf": "2026-10-28T02:00:00Z",
+  "cases": [
+    {
+      "caseId": "B01-lower-boundary",
+      "storeId": "STORE-A",
+      "modelCode": "MX-7",
+      "appointmentAt": "2026-11-07T10:00:00+08:00",
+      "policySourceRefs": ["data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1"],
+      "expectedOutcome": "CANDIDATE",
+      "expectedModelCalls": 1,
+      "expectedAdvisorId": 301,
+      "expectedCitationRef": "data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1"
+    },
+    {
+      "caseId": "B02-upper-boundary",
+      "storeId": "STORE-A",
+      "modelCode": "MX-7",
+      "appointmentAt": "2026-11-07T17:00:00+08:00",
+      "policySourceRefs": ["data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1"],
+      "expectedOutcome": "NEEDS_REVIEW",
+      "expectedModelCalls": 0,
+      "expectedAdvisorId": null,
+      "expectedCitationRef": null
+    },
+    {
+      "caseId": "B03-one-second-before-end",
+      "storeId": "STORE-C",
+      "modelCode": "MX-7",
+      "appointmentAt": "2026-11-07T16:59:59+08:00",
+      "policySourceRefs": [
+        "data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1",
+        "data/policies/STORE-C-MX-7-test-drive-v1.md#rule-2"
+      ],
+      "expectedOutcome": "CANDIDATE",
+      "expectedModelCalls": 1,
+      "expectedAdvisorId": 301,
+      "expectedCitationRef": "data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1"
+    },
+    {
+      "caseId": "B04-offset-upper-boundary",
+      "storeId": "STORE-C",
+      "modelCode": "MX-7",
+      "appointmentAt": "2026-11-07T09:00:00Z",
+      "policySourceRefs": ["data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1"],
+      "expectedOutcome": "NEEDS_REVIEW",
+      "expectedModelCalls": 0,
+      "expectedAdvisorId": null,
+      "expectedCitationRef": null
+    },
+    {
+      "caseId": "B05-wrong-top-chunk",
+      "storeId": "STORE-C",
+      "modelCode": "MX-7",
+      "appointmentAt": "2026-11-07T14:00:00+08:00",
+      "policySourceRefs": [
+        "data/policies/STORE-C-MX-7-test-drive-v1.md#rule-2",
+        "data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1"
+      ],
+      "expectedOutcome": "NEEDS_REVIEW",
+      "expectedModelCalls": 0,
+      "expectedAdvisorId": null,
+      "expectedCitationRef": null
+    }
+  ]
+}

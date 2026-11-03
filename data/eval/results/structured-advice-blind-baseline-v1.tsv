@@ -1,0 +1,10 @@
+# scope=structured-advice-blind-baseline-v1
+# inputSha256=c9e0d4cd8facde20587dad1d7e6621a0ab5bb3f88df5783e34c5856bf4e81b60
+# corpusSha256=c2b198f738c2514e324e24033634c622f324a863ee0a96d3213697fa83087cf0
+caseId	expectedOutcome	ruleOutcome	expectedAdvisorId	ruleAdvisorId	expectedCitationRef	ruleCitationRef	ruleQuote	pass
+B01-lower-boundary	CANDIDATE	CANDIDATE	301	301	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	每日 10:00（含）至 17:00（不含）	PASS
+B02-upper-boundary	NEEDS_REVIEW	NEEDS_REVIEW	-	-	-	-	-	PASS
+B03-one-second-before-end	CANDIDATE	CANDIDATE	301	301	data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1	每日 10:00（含）至 17:00（不含）	PASS
+B04-offset-upper-boundary	NEEDS_REVIEW	NEEDS_REVIEW	-	-	-	-	-	PASS
+B05-wrong-top-chunk	NEEDS_REVIEW	NEEDS_REVIEW	-	-	-	-	-	PASS
+# ruleExactCasePass=5/5

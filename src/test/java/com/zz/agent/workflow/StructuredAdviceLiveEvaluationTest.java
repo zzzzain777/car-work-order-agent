@@ -39,8 +39,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ActiveProfiles("deepseek")
 class StructuredAdviceLiveEvaluationTest {
 
-    private static final Path INPUT = Path.of("data/eval/workflow/structured-advice-live-v2.json");
-    private static final Path OUTPUT = Path.of("target/eval/structured-advice-live-v2.tsv");
+    private static final Path INPUT = Path.of(System.getProperty("advice.eval.input",
+            "data/eval/workflow/structured-advice-live-v2.json"));
+    private static final Path OUTPUT = Path.of(System.getProperty("advice.eval.output",
+            "target/eval/structured-advice-live-v2.tsv"));
 
     @Autowired
     private ModelTextGenerator generator;
@@ -160,9 +162,11 @@ class StructuredAdviceLiveEvaluationTest {
         ReadOnlyAdviceFlow.Result result = new ReadOnlyAdviceFlow.Result(
                 ReadOnlyAdviceFlow.Stage.READY_FOR_ADMIN_REVIEW, workOrderId, "模拟只读预览",
                 List.of(), evidence, advisors, observedAt, false);
+        String appointmentAt = item.hasNonNull("appointmentAt")
+                ? item.path("appointmentAt").asText() : fixture.path("appointmentAt").asText();
         ReadOnlyAdviceFlow.Supplement supplement = new ReadOnlyAdviceFlow.Supplement(
                 item.path("storeId").asText(), item.path("modelCode").asText(),
-                OffsetDateTime.parse(fixture.path("appointmentAt").asText()));
+                OffsetDateTime.parse(appointmentAt));
         JdbcAgentTaskStore.Preview preview = new JdbcAgentTaskStore.Preview(
                 ReadOnlyAdviceFlow.Stage.READY_FOR_ADMIN_REVIEW,
                 evidence.stream().map(PolicyEvidenceGate.Evidence::sourceRef).toList(),
