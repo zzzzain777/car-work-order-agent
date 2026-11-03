@@ -1,6 +1,6 @@
 # 汽车工单智能处置 Agent
 
-目前已有[模拟附近五店可用性查询](docs/verification/stage-1/nearby-store-availability.md)和[客户本人选店流程](docs/verification/stage-1/customer-store-selection.md)：客户可从最近五家中选择模拟有车且时段空闲的门店，结果只保存在 Agent 任务中。[简历演示验收单](docs/verification/stage-1/resume-demo-acceptance.md)列出可复现步骤和证据边界。
+目前已有[模拟附近五店可用性查询](docs/verification/stage-1/nearby-store-availability.md)和[客户本人选店流程](docs/verification/stage-1/customer-store-selection.md)：客户可从最近五家中选择模拟有车且时段空闲的门店，结果只保存在 Agent 任务中。[简历演示验收单](docs/verification/stage-1/resume-demo-acceptance.md)列出可复现步骤和证据边界；[10 分钟演示与面试追问](docs/interview/ten-minute-demo.md)给出讲法。
 
 这是独立的 Java 21 / Spring Boot 项目。目前有可启动的应用骨架、健康检查、阶段 0 技术探针、DeepSeek 的框架接线及一次真实短文本联通结果、基于模拟门店的纯 Java“最近五家”筛选、管理员确认前的纯规则判断、模拟政策向量检索，以及工单与顾问数据的**只读建议预览**。Agent 自有的[任务持久化能力](docs/verification/stage-1/durable-agent-task.md)已与[只读预览内部流程](docs/verification/stage-1/task-preview-wiring.md)接通，并有[模型结构化建议与引用核验](docs/verification/stage-1/structured-advice.md)、[模拟人工确认](docs/verification/stage-1/simulated-confirmation.md)和[本机操作页](docs/verification/stage-1/local-demo-entry.md)。`GET /api/agent/preview` 仍是独立的无任务只读接口；本机操作页使用新的任务接口，最终只调用模拟分配端。客户选店已有隔离测试及本机双身份联调；真实分配尚未完成。[第一版设计](docs/superpowers/specs/2026-10-20-car-work-order-agent-design.md)和[阶段 0 决策](docs/verification/stage-0/decision.md)记录了边界与未通过的联调门槛。
 
