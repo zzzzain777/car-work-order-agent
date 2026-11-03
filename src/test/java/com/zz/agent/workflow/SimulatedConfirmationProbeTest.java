@@ -51,6 +51,18 @@ class SimulatedConfirmationProbeTest {
     }
 
     @Test
+    void proposalWithoutPersistedRiskReviewCannotBeRestoredOrApproved() {
+        Fixture fixture = fixture();
+        JdbcConfirmationStore.Proposal proposal = fixture.proposal();
+        fixture.jdbc.update("DELETE FROM agent_advice_run WHERE task_id = ?", proposal.taskId());
+
+        assertTrue(fixture.flow().pending(COOKIE, proposal.taskId()).isEmpty());
+        assertEquals(TaskState.STALE_PROPOSAL, fixture.flow().confirm(COOKIE, proposal.taskId(),
+                new ConfirmationCommand(proposal.id().toString(), proposal.taskVersion(), true)).state());
+        assertEquals(0, fixture.calls.get());
+    }
+
+    @Test
     void confirmationPersistsOneAttemptAndDuplicateDoesNotAssignAgain() {
         Fixture fixture = fixture();
         fixture.behavior = (cookie, order, advisor) -> {
@@ -240,20 +252,27 @@ class SimulatedConfirmationProbeTest {
         tasks.initializeSchema();
         JdbcConfirmationStore confirmations = new JdbcConfirmationStore(jdbc);
         confirmations.initializeSchema();
-        return new Fixture(tasks, confirmations, new FakeCarSystem());
+        JdbcAdviceRunStore runs = new JdbcAdviceRunStore(jdbc);
+        runs.initializeSchema();
+        return new Fixture(jdbc, tasks, confirmations, runs, new FakeCarSystem());
     }
 
     private static final class Fixture {
+        final JdbcTemplate jdbc;
         final JdbcAgentTaskStore tasks;
         final JdbcConfirmationStore confirmations;
+        final JdbcAdviceRunStore runs;
         final FakeCarSystem car;
         final AtomicInteger calls = new AtomicInteger();
         String policyText = "模拟政策原文：工作日可以提交试驾申请。";
         SimulatedAssignmentPort behavior = (cookie, order, advisor) -> SimulatedAssignmentPort.Result.ACCEPTED;
 
-        Fixture(JdbcAgentTaskStore tasks, JdbcConfirmationStore confirmations, FakeCarSystem car) {
+        Fixture(JdbcTemplate jdbc, JdbcAgentTaskStore tasks, JdbcConfirmationStore confirmations,
+                JdbcAdviceRunStore runs, FakeCarSystem car) {
+            this.jdbc = jdbc;
             this.tasks = tasks;
             this.confirmations = confirmations;
+            this.runs = runs;
             this.car = car;
         }
 
@@ -267,7 +286,7 @@ class SimulatedConfirmationProbeTest {
                             PolicyEvidenceGate.Outcome.CANDIDATES,
                             List.of(new PolicyEvidenceGate.Evidence("chunk-1", "POL-A", 1, SOURCE,
                                     policyText))), clock),
-                    tasks, confirmations, (cookie, order, advisor) -> {
+                    tasks, confirmations, runs, (cookie, order, advisor) -> {
                         calls.incrementAndGet();
                         return behavior.assign(cookie, order, advisor);
                     }, clock);
@@ -288,7 +307,11 @@ class SimulatedConfirmationProbeTest {
             StructuredAdviceService.Advice advice = new StructuredAdviceService.Advice(
                     StructuredAdviceService.Outcome.CANDIDATE, 301L, 1, 2,
                     List.of(new StructuredAdviceService.Citation(SOURCE, "工作日可以提交试驾申请")),
-                    "模拟建议", StructuredAdviceService.PROMPT_VERSION, "deepseek-flash", 20, 10);
+                    "模拟建议", StructuredAdviceService.PROMPT_VERSION, "deepseek-flash", 20, 10)
+                    .withPolicyRisk(new PolicyRiskReviewService.Review(PolicyRiskReviewService.Verdict.ALLOW,
+                            SOURCE, "工作日可以提交试驾申请", "模拟政策风险提示",
+                            PolicyRiskReviewService.PROMPT_VERSION, "deepseek-flash", 5, 2));
+            runs.record(ready, advice, 1).orElseThrow();
             return flow().publish(COOKIE, new AgentAdviceOrchestrator.Recommendation(ready, preview, advice))
                     .orElseThrow();
         }

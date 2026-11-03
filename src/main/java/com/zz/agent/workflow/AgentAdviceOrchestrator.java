@@ -13,15 +13,27 @@ public final class AgentAdviceOrchestrator {
 
     private final AgentTaskWorkflow workflow;
     private final StructuredAdviceService advice;
+    private final PolicyRiskReviewService policyRisk;
 
-    public AgentAdviceOrchestrator(AgentTaskWorkflow workflow, StructuredAdviceService advice) {
+    public AgentAdviceOrchestrator(AgentTaskWorkflow workflow, StructuredAdviceService advice,
+                                   PolicyRiskReviewService policyRisk) {
         this.workflow = Objects.requireNonNull(workflow, "任务流程不能为空");
         this.advice = Objects.requireNonNull(advice, "结构化建议服务不能为空");
+        this.policyRisk = Objects.requireNonNull(policyRisk, "政策风险服务不能为空");
     }
 
     public Optional<Recommendation> refreshAndSuggest(String cookieHeader, UUID taskId, long expectedVersion) {
         return workflow.refresh(cookieHeader, taskId, expectedVersion)
-                .map(refreshed -> new Recommendation(refreshed.task(), refreshed.result(),
-                        advice.suggest(refreshed)));
+                .map(refreshed -> {
+                    StructuredAdviceService.Advice initial = advice.suggest(refreshed);
+                    if (initial.outcome() != StructuredAdviceService.Outcome.CANDIDATE) {
+                        return new Recommendation(refreshed.task(), refreshed.result(), initial);
+                    }
+                    var supplement = refreshed.task().supplement();
+                    PolicyRiskReviewService.Review review = policyRisk.assess(
+                            refreshed.result().policyEvidence().getFirst(), supplement.storeId(),
+                            supplement.modelCode(), supplement.appointmentAt());
+                    return new Recommendation(refreshed.task(), refreshed.result(), initial.withPolicyRisk(review));
+                });
     }
 }

@@ -105,6 +105,38 @@ class StructuredAdviceServiceTest {
     }
 
     @Test
+    void policyRiskCanOnlyBlockOrAnnotateAValidatedCandidate() {
+        StructuredAdviceService service = new StructuredAdviceService((system, user) ->
+                new StructuredAdviceService.Completion(VALID_JSON, "deepseek-flash", 120, 35),
+                new ObjectMapper());
+        StructuredAdviceService.Advice candidate = service.suggest(ready());
+        PolicyRiskReviewService.Review denied = new PolicyRiskReviewService.Review(
+                PolicyRiskReviewService.Verdict.DENY, SOURCE,
+                "每日 10:00（含）至 17:00（不含）", "模拟政策禁止本次申请",
+                PolicyRiskReviewService.PROMPT_VERSION, "deepseek-flash", 80, 20);
+
+        StructuredAdviceService.Advice blocked = candidate.withPolicyRisk(denied);
+
+        assertEquals(StructuredAdviceService.Outcome.NEEDS_REVIEW, blocked.outcome());
+        assertNull(blocked.advisorId());
+        assertTrue(blocked.citations().isEmpty());
+        assertEquals(200, blocked.promptTokens());
+        assertEquals(55, blocked.completionTokens());
+        assertEquals(PolicyRiskReviewService.Verdict.DENY, blocked.policyRisk().verdict());
+
+        PolicyRiskReviewService.Review allowed = new PolicyRiskReviewService.Review(
+                PolicyRiskReviewService.Verdict.ALLOW, SOURCE,
+                "每日 10:00（含）至 17:00（不含）", "只读风险提示",
+                PolicyRiskReviewService.PROMPT_VERSION, "deepseek-flash", 80, 20);
+        assertEquals(StructuredAdviceService.Outcome.CANDIDATE,
+                candidate.withPolicyRisk(allowed).outcome());
+        assertEquals(StructuredAdviceService.Outcome.NEEDS_REVIEW,
+                candidate.withPolicyRisk(new PolicyRiskReviewService.Review(
+                        PolicyRiskReviewService.Verdict.ALLOW, "other#rule-1", allowed.quote(),
+                        allowed.message(), allowed.promptVersion(), allowed.modelId(), 80, 20)).outcome());
+    }
+
+    @Test
     void onlyTopRankedTimeRuleCanSupportTheSuggestion() {
         AtomicReference<String> userPrompt = new AtomicReference<>();
         String secondRuleCitation = """

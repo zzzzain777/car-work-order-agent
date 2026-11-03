@@ -26,17 +26,20 @@ public final class SimulatedConfirmationFlow {
     private final ReadOnlyAdviceFlow readOnly;
     private final JdbcAgentTaskStore tasks;
     private final JdbcConfirmationStore confirmations;
+    private final JdbcAdviceRunStore runs;
     private final SimulatedAssignmentPort simulatedAssignment;
     private final Clock clock;
     private final ConfirmationGate gate = new ConfirmationGate();
 
     public SimulatedConfirmationFlow(CarSystemReadClient carSystem, ReadOnlyAdviceFlow readOnly,
                                      JdbcAgentTaskStore tasks, JdbcConfirmationStore confirmations,
-                                     SimulatedAssignmentPort simulatedAssignment, Clock clock) {
+                                     JdbcAdviceRunStore runs, SimulatedAssignmentPort simulatedAssignment,
+                                     Clock clock) {
         this.carSystem = Objects.requireNonNull(carSystem, "业务系统只读客户端不能为空");
         this.readOnly = Objects.requireNonNull(readOnly, "只读预览流程不能为空");
         this.tasks = Objects.requireNonNull(tasks, "任务存储不能为空");
         this.confirmations = Objects.requireNonNull(confirmations, "确认记录不能为空");
+        this.runs = Objects.requireNonNull(runs, "建议运行记录不能为空");
         this.simulatedAssignment = Objects.requireNonNull(simulatedAssignment, "模拟分配端不能为空");
         this.clock = Objects.requireNonNull(clock, "时钟不能为空");
     }
@@ -68,7 +71,8 @@ public final class SimulatedConfirmationFlow {
             return Optional.empty();
         }
         return confirmations.findPendingProposal(taskId, adminId)
-                .filter(proposal -> clock.instant().isBefore(proposal.expiresAt()));
+                .filter(proposal -> clock.instant().isBefore(proposal.expiresAt())
+                        && runs.hasApprovedRiskRun(taskId, adminId, proposal.taskVersion() - 1));
     }
 
     public Decision confirm(String cookieHeader, UUID taskId, ConfirmationCommand command) {
@@ -104,6 +108,10 @@ public final class SimulatedConfirmationFlow {
         if (task == null || gate.decide(new ConfirmationTask(task.state(), task.version(),
                 proposalId.toString(), proposal.expiresAt()), command, clock.instant())
                 == ConfirmationDecision.STALE_PROPOSAL) {
+            return stale();
+        }
+        if (command.approve()
+                && !runs.hasApprovedRiskRun(taskId, adminId, proposal.taskVersion() - 1)) {
             return stale();
         }
         if (!command.approve()) {
@@ -226,6 +234,9 @@ public final class SimulatedConfirmationFlow {
                 || !Objects.equals(preview.observedAt(), task.preview().observedAt())
                 || advice.outcome() != StructuredAdviceService.Outcome.CANDIDATE
                 || advice.advisorId() == null || advice.advisorId() <= 0 || advice.citations().isEmpty()
+                || advice.policyRisk() == null
+                || advice.policyRisk().verdict() != PolicyRiskReviewService.Verdict.ALLOW
+                || advice.policyRisk().sourceRef() == null || advice.policyRisk().quote() == null
                 || !StructuredAdviceService.PROMPT_VERSION.equals(advice.promptVersion())) {
             return false;
         }
@@ -238,7 +249,12 @@ public final class SimulatedConfirmationFlow {
                 && advice.citations().stream().allMatch(citation -> preview.policyEvidence().stream()
                         .anyMatch(evidence -> Objects.equals(evidence.sourceRef(), citation.sourceRef())
                                 && citation.quote() != null && citation.quote().length() >= 8
-                                && evidence.text() != null && evidence.text().contains(citation.quote())));
+                                && evidence.text() != null && evidence.text().contains(citation.quote())))
+                && preview.policyEvidence().stream().anyMatch(evidence ->
+                        Objects.equals(evidence.sourceRef(), advice.policyRisk().sourceRef())
+                                && Objects.equals(evidence.sourceRef(), advice.citations().getFirst().sourceRef())
+                                && evidence.text() != null
+                                && evidence.text().contains(advice.policyRisk().quote()));
     }
 
     private static boolean sameSnapshot(JdbcAgentTaskStore.Task task, CarSystemReadClient.WorkOrder order) {

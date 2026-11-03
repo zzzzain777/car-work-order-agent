@@ -17,12 +17,13 @@ public final class JdbcAdviceRunStore {
     public record Run(UUID id, UUID taskId, long taskVersion, String outcome,
                       String promptVersion, String modelId, long promptTokens,
                       long completionTokens, long requestElapsedMs,
-                      String citedSourceRef, Instant createdAt) {
+                      String citedSourceRef, String riskVerdict, String riskSourceRef,
+                      String riskQuote, Instant createdAt) {
     }
 
     private static final String COLUMNS = "run_id, task_id, task_version, outcome, prompt_version, "
             + "model_id, prompt_tokens, completion_tokens, request_elapsed_ms, "
-            + "cited_source_ref, created_at";
+            + "cited_source_ref, risk_verdict, risk_source_ref, risk_quote, created_at";
 
     private final JdbcTemplate jdbc;
     private final RowMapper<Run> mapper = this::mapRun;
@@ -44,9 +45,15 @@ public final class JdbcAdviceRunStore {
                     completion_tokens bigint NOT NULL CHECK (completion_tokens >= 0),
                     request_elapsed_ms bigint NOT NULL CHECK (request_elapsed_ms >= 0),
                     cited_source_ref text,
+                    risk_verdict varchar(20),
+                    risk_source_ref text,
+                    risk_quote text,
                     created_at timestamptz NOT NULL DEFAULT now()
                 )
                 """);
+        jdbc.execute("ALTER TABLE agent_advice_run ADD COLUMN IF NOT EXISTS risk_verdict varchar(20)");
+        jdbc.execute("ALTER TABLE agent_advice_run ADD COLUMN IF NOT EXISTS risk_source_ref text");
+        jdbc.execute("ALTER TABLE agent_advice_run ADD COLUMN IF NOT EXISTS risk_quote text");
         jdbc.execute("CREATE INDEX IF NOT EXISTS agent_advice_run_task_time_idx "
                 + "ON agent_advice_run (task_id, created_at DESC)");
     }
@@ -61,18 +68,21 @@ public final class JdbcAdviceRunStore {
             throw new IllegalArgumentException("建议运行指标不合法");
         }
         String citedRef = advice.citations().isEmpty() ? null : advice.citations().getFirst().sourceRef();
+        PolicyRiskReviewService.Review risk = advice.policyRisk();
         UUID runId = UUID.randomUUID();
         return jdbc.query("""
                 INSERT INTO agent_advice_run (run_id, task_id, task_version, outcome,
                     prompt_version, model_id, prompt_tokens, completion_tokens,
-                    request_elapsed_ms, cited_source_ref)
-                SELECT ?, t.task_id, ?, ?, ?, ?, ?, ?, ?, ?
+                    request_elapsed_ms, cited_source_ref, risk_verdict, risk_source_ref, risk_quote)
+                SELECT ?, t.task_id, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                 FROM agent_task t
                 WHERE t.task_id = ? AND t.admin_id = ? AND t.version = ?
                 RETURNING
                 """ + COLUMNS, mapper, runId, task.version(), advice.outcome().name(),
                 advice.promptVersion(), advice.modelId(), advice.promptTokens(), advice.completionTokens(),
-                requestElapsedMs, citedRef, task.id(), task.adminId(), task.version()).stream().findFirst();
+                requestElapsedMs, citedRef, risk == null ? null : risk.verdict().name(),
+                risk == null ? null : risk.sourceRef(), risk == null ? null : risk.quote(),
+                task.id(), task.adminId(), task.version()).stream().findFirst();
     }
 
     public List<Run> recent(UUID taskId, long adminId) {
@@ -85,11 +95,32 @@ public final class JdbcAdviceRunStore {
                 + "ORDER BY r.created_at DESC, r.run_id DESC LIMIT 20", mapper, taskId, adminId);
     }
 
+    /** 旧提案缺少政策风险记录时，确认端不得继续执行。 */
+    public boolean hasApprovedRiskRun(UUID taskId, long adminId, long adviceTaskVersion) {
+        if (taskId == null || adminId <= 0 || adviceTaskVersion < 0) {
+            return false;
+        }
+        Boolean found = jdbc.queryForObject("""
+                SELECT EXISTS (
+                  SELECT 1 FROM agent_advice_run r
+                  JOIN agent_task t ON t.task_id = r.task_id
+                  WHERE r.task_id = ? AND t.admin_id = ? AND r.task_version = ?
+                    AND r.outcome = 'CANDIDATE' AND r.prompt_version = ?
+                    AND r.risk_verdict = 'ALLOW' AND r.risk_source_ref = r.cited_source_ref
+                    AND length(r.risk_quote) BETWEEN 8 AND 160
+                )
+                """, Boolean.class, taskId, adminId, adviceTaskVersion,
+                StructuredAdviceService.PROMPT_VERSION);
+        return Boolean.TRUE.equals(found);
+    }
+
     private Run mapRun(ResultSet rs, int row) throws SQLException {
         return new Run(rs.getObject("run_id", UUID.class), rs.getObject("task_id", UUID.class),
                 rs.getLong("task_version"), rs.getString("outcome"), rs.getString("prompt_version"),
                 rs.getString("model_id"), rs.getLong("prompt_tokens"),
                 rs.getLong("completion_tokens"), rs.getLong("request_elapsed_ms"),
-                rs.getString("cited_source_ref"), rs.getTimestamp("created_at").toInstant());
+                rs.getString("cited_source_ref"), rs.getString("risk_verdict"),
+                rs.getString("risk_source_ref"), rs.getString("risk_quote"),
+                rs.getTimestamp("created_at").toInstant());
     }
 }

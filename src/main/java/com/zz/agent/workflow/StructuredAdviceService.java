@@ -52,9 +52,34 @@ public final class StructuredAdviceService {
 
     public record Advice(Outcome outcome, Long advisorId, int processing, int total,
                          List<Citation> citations, String message, String promptVersion,
-                         String modelId, long promptTokens, long completionTokens) {
+                         String modelId, long promptTokens, long completionTokens,
+                         PolicyRiskReviewService.Review policyRisk) {
         public Advice {
             citations = List.copyOf(citations);
+        }
+
+        public Advice(Outcome outcome, Long advisorId, int processing, int total,
+                      List<Citation> citations, String message, String promptVersion,
+                      String modelId, long promptTokens, long completionTokens) {
+            this(outcome, advisorId, processing, total, citations, message, promptVersion,
+                    modelId, promptTokens, completionTokens, null);
+        }
+
+        public Advice withPolicyRisk(PolicyRiskReviewService.Review risk) {
+            Objects.requireNonNull(risk, "政策风险判断不能为空");
+            boolean supported = outcome == Outcome.CANDIDATE
+                    && risk.verdict() == PolicyRiskReviewService.Verdict.ALLOW
+                    && !citations.isEmpty() && Objects.equals(citations.getFirst().sourceRef(), risk.sourceRef())
+                    && risk.quote() != null && !risk.quote().isBlank();
+            return new Advice(supported ? Outcome.CANDIDATE : Outcome.NEEDS_REVIEW,
+                    supported ? advisorId : null, supported ? processing : 0, supported ? total : 0,
+                    supported ? citations : List.of(),
+                    supported ? message + " 模型政策风险提示已引用原文，仍须人工核对。"
+                            : risk.verdict() == PolicyRiskReviewService.Verdict.ALLOW
+                                    ? "政策风险引用与建议来源不一致，需人工核对" : risk.message(), promptVersion,
+                    modelId == null ? risk.modelId() : modelId,
+                    addUsage(promptTokens, risk.promptTokens()),
+                    addUsage(completionTokens, risk.completionTokens()), risk);
         }
     }
 

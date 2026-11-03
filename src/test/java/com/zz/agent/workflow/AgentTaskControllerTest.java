@@ -122,7 +122,7 @@ class AgentTaskControllerTest {
         when(fixture.orchestrator.refreshAndSuggest(COOKIE, taskId, 1)).thenReturn(Optional.of(result));
         JdbcAdviceRunStore.Run run = new JdbcAdviceRunStore.Run(UUID.randomUUID(), taskId, 2,
                 "CANDIDATE", StructuredAdviceService.PROMPT_VERSION, "deepseek-flash",
-                10, 5, 123, null, CLOCK.instant());
+                10, 5, 123, null, null, null, null, CLOCK.instant());
         when(fixture.runs.record(eq(ready), eq(advice), anyLong())).thenReturn(Optional.of(run));
         when(fixture.confirmations.publish(COOKIE, result)).thenReturn(Optional.of(proposal));
         when(fixture.workflow.find(COOKIE, taskId)).thenReturn(Optional.of(awaiting));
@@ -149,7 +149,7 @@ class AgentTaskControllerTest {
         JdbcAgentTaskStore.Task task = task(taskId);
         JdbcAdviceRunStore.Run run = new JdbcAdviceRunStore.Run(UUID.randomUUID(), taskId, 0,
                 "NEEDS_REVIEW", StructuredAdviceService.PROMPT_VERSION, null,
-                0, 0, 85, null, CLOCK.instant());
+                0, 0, 85, null, null, null, null, CLOCK.instant());
         when(fixture.workflow.find(COOKIE, taskId)).thenReturn(Optional.of(task));
         when(fixture.workflow.find(null, taskId)).thenThrow(new SecurityException());
         when(fixture.runs.recent(taskId, task.adminId())).thenReturn(List.of(run));

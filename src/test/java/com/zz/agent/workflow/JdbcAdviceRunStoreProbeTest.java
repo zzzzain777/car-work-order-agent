@@ -10,6 +10,7 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -33,15 +34,23 @@ class JdbcAdviceRunStoreProbeTest {
                 StructuredAdviceService.Outcome.CANDIDATE, 301L, 0, 1,
                 List.of(new StructuredAdviceService.Citation(
                         "data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1", "10:00 至 17:00")),
-                "模拟建议", StructuredAdviceService.PROMPT_VERSION, "deepseek-flash", 120, 35);
+                "模拟建议", StructuredAdviceService.PROMPT_VERSION, "deepseek-flash", 120, 35)
+                .withPolicyRisk(new PolicyRiskReviewService.Review(PolicyRiskReviewService.Verdict.ALLOW,
+                        "data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1", "10:00 至 17:00",
+                        "只读政策风险提示", PolicyRiskReviewService.PROMPT_VERSION, "deepseek-flash", 80, 20));
 
         JdbcAdviceRunStore.Run saved = runs.record(task, advice, 456).orElseThrow();
 
         assertNotNull(saved.createdAt());
         assertEquals(456, saved.requestElapsedMs());
-        assertEquals(120, saved.promptTokens());
-        assertEquals(35, saved.completionTokens());
+        assertEquals(200, saved.promptTokens());
+        assertEquals(55, saved.completionTokens());
         assertEquals("data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1", saved.citedSourceRef());
+        assertEquals("ALLOW", saved.riskVerdict());
+        assertEquals("data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1", saved.riskSourceRef());
+        assertEquals("10:00 至 17:00", saved.riskQuote());
+        assertTrue(runs.hasApprovedRiskRun(task.id(), 9001, task.version()));
+        assertFalse(runs.hasApprovedRiskRun(task.id(), 9002, task.version()));
         assertEquals(List.of(saved), runs.recent(task.id(), 9001));
         assertTrue(runs.recent(task.id(), 9002).isEmpty());
 

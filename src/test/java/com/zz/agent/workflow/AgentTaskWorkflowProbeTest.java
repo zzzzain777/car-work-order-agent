@@ -122,7 +122,7 @@ class AgentTaskWorkflowProbeTest {
                     "quote":"试驾申请时间可落在每日 10:00（含）至 17:00（不含）"}]}
                     """, "deepseek-flash", 20, 10);
         }, new ObjectMapper());
-        AgentAdviceOrchestrator orchestrator = new AgentAdviceOrchestrator(workflow, advice);
+        AgentAdviceOrchestrator orchestrator = new AgentAdviceOrchestrator(workflow, advice, risk());
 
         AgentAdviceOrchestrator.Recommendation result = orchestrator.refreshAndSuggest(COOKIE, task.id(), 1)
                 .orElseThrow();
@@ -145,7 +145,8 @@ class AgentTaskWorkflowProbeTest {
         }, new ObjectMapper());
 
         AgentAdviceOrchestrator.Recommendation result =
-                new AgentAdviceOrchestrator(workflow, advice).refreshAndSuggest(COOKIE, task.id(), 0).orElseThrow();
+                new AgentAdviceOrchestrator(workflow, advice, risk())
+                        .refreshAndSuggest(COOKIE, task.id(), 0).orElseThrow();
 
         assertEquals(TaskState.NEEDS_INPUT, result.task().state());
         assertEquals(StructuredAdviceService.Outcome.NEEDS_REVIEW, result.advice().outcome());
@@ -154,6 +155,12 @@ class AgentTaskWorkflowProbeTest {
 
     private static AgentTaskWorkflow workflow(FakeCarSystem car, PolicyStub policies, JdbcAgentTaskStore store) {
         return new AgentTaskWorkflow(car, new ReadOnlyAdviceFlow(car, policies, CLOCK), store, CLOCK);
+    }
+
+    private static PolicyRiskReviewService risk() {
+        return new PolicyRiskReviewService((system, user) -> new StructuredAdviceService.Completion("""
+                {"verdict":"ALLOW","quote":"试驾申请时间可落在每日 10:00（含）至 17:00（不含）"}
+                """, "deepseek-flash", 10, 5), new ObjectMapper());
     }
 
     private static JdbcAgentTaskStore store() {

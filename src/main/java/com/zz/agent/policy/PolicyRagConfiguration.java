@@ -19,6 +19,7 @@ import com.zz.agent.workflow.ReadOnlyAdviceFlow;
 import com.zz.agent.workflow.SimulatedAssignmentPort;
 import com.zz.agent.workflow.SimulatedConfirmationFlow;
 import com.zz.agent.workflow.StructuredAdviceService;
+import com.zz.agent.workflow.PolicyRiskReviewService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -153,8 +154,8 @@ public class PolicyRagConfiguration {
 
     @Bean
     @Profile("deepseek")
-    StructuredAdviceService structuredAdviceService(ModelTextGenerator generator, ObjectMapper json) {
-        return new StructuredAdviceService((system, user) -> {
+    StructuredAdviceService.AdviceModel adviceModel(ModelTextGenerator generator) {
+        return (system, user) -> {
             ChatResponse response = generator.generate(system, user);
             var metadata = response.getMetadata();
             var usage = metadata == null ? null : metadata.getUsage();
@@ -165,13 +166,26 @@ public class PolicyRagConfiguration {
                     usage == null || usage.getPromptTokens() == null ? 0 : usage.getPromptTokens().longValue(),
                     usage == null || usage.getCompletionTokens() == null ? 0
                             : usage.getCompletionTokens().longValue());
-        }, json);
+        };
     }
 
     @Bean
     @Profile("deepseek")
-    AgentAdviceOrchestrator agentAdviceOrchestrator(AgentTaskWorkflow workflow, StructuredAdviceService advice) {
-        return new AgentAdviceOrchestrator(workflow, advice);
+    StructuredAdviceService structuredAdviceService(StructuredAdviceService.AdviceModel model, ObjectMapper json) {
+        return new StructuredAdviceService(model, json);
+    }
+
+    @Bean
+    @Profile("deepseek")
+    PolicyRiskReviewService policyRiskReviewService(StructuredAdviceService.AdviceModel model, ObjectMapper json) {
+        return new PolicyRiskReviewService(model, json);
+    }
+
+    @Bean
+    @Profile("deepseek")
+    AgentAdviceOrchestrator agentAdviceOrchestrator(AgentTaskWorkflow workflow, StructuredAdviceService advice,
+                                                   PolicyRiskReviewService policyRisk) {
+        return new AgentAdviceOrchestrator(workflow, advice, policyRisk);
     }
 
     @Bean
@@ -199,8 +213,9 @@ public class PolicyRagConfiguration {
                                                         ReadOnlyAdviceFlow readOnly,
                                                         JdbcAgentTaskStore tasks,
                                                         JdbcConfirmationStore confirmations,
+                                                        JdbcAdviceRunStore runs,
                                                         SimulatedAssignmentPort simulation) {
         return new SimulatedConfirmationFlow(carSystem, readOnly, tasks, confirmations,
-                simulation, Clock.systemUTC());
+                runs, simulation, Clock.systemUTC());
     }
 }
