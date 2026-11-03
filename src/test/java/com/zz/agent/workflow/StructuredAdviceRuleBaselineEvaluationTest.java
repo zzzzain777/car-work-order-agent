@@ -99,7 +99,7 @@ class StructuredAdviceRuleBaselineEvaluationTest {
                 .append("# scope=structured-advice-rules-vs-model-v1\n")
                 .append("# inputSha256=").append(fixtureHash).append('\n')
                 .append("# corpusSha256=").append(corpusHash).append('\n')
-                .append("# modelSnapshot=structured-advice-live-v2.tsv\n")
+                .append("# modelSnapshot=").append(MODEL_RESULT.getFileName()).append('\n')
                 .append("caseId\texpectedOutcome\truleOutcome\tmodelOutcome")
                 .append("\texpectedAdvisorId\truleAdvisorId\tmodelAdvisorId")
                 .append("\texpectedCitationRef\truleCitationRef\tmodelCitationRef")

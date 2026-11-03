@@ -1,0 +1,15 @@
+# scope=structured-advice-blind-v1
+# inputSha256=c9e0d4cd8facde20587dad1d7e6621a0ab5bb3f88df5783e34c5856bf4e81b60
+# corpusSha256=c2b198f738c2514e324e24033634c622f324a863ee0a96d3213697fa83087cf0
+# promptVersion=advice-v3
+# reasoningEffort=none
+# maxTokensPerCall=512
+caseId	expectedOutcome	actualOutcome	expectedAdvisorId	actualAdvisorId	expectedCitationRef	actualCitationRef	quoteInSource	expectedModelCalls	modelCalls	modelId	promptTokens	completionTokens	elapsedMs	pass
+B01-lower-boundary	CANDIDATE	CANDIDATE	301	301	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	true	1	1	deepseek-flash	379	56	1390	PASS
+B02-upper-boundary	NEEDS_REVIEW	NEEDS_REVIEW	-	-	-	-	false	0	0	-	0	0	0	PASS
+B03-one-second-before-end	CANDIDATE	CANDIDATE	301	301	data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1	true	1	1	deepseek-flash	362	56	900	PASS
+B04-offset-upper-boundary	NEEDS_REVIEW	NEEDS_REVIEW	-	-	-	-	false	0	0	-	0	0	0	PASS
+B05-wrong-top-chunk	NEEDS_REVIEW	NEEDS_REVIEW	-	-	-	-	false	0	0	-	0	0	0	PASS
+# exactCasePass=5/5
+# reportedPromptTokens=741
+# reportedCompletionTokens=112

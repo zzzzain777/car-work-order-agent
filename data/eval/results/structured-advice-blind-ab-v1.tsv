@@ -1,0 +1,13 @@
+# scope=structured-advice-rules-vs-model-v1
+# inputSha256=c9e0d4cd8facde20587dad1d7e6621a0ab5bb3f88df5783e34c5856bf4e81b60
+# corpusSha256=c2b198f738c2514e324e24033634c622f324a863ee0a96d3213697fa83087cf0
+# modelSnapshot=structured-advice-blind-live-v1.tsv
+caseId	expectedOutcome	ruleOutcome	modelOutcome	expectedAdvisorId	ruleAdvisorId	modelAdvisorId	expectedCitationRef	ruleCitationRef	modelCitationRef	ruleQuote	ruleElapsedNs	modelCalls	modelPromptTokens	modelCompletionTokens	modelElapsedMs	rulePass	modelPass	agree
+B01-lower-boundary	CANDIDATE	CANDIDATE	CANDIDATE	301	301	301	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	每日 10:00（含）至 17:00（不含）	904542	1	379	56	1390	PASS	PASS	true
+B02-upper-boundary	NEEDS_REVIEW	NEEDS_REVIEW	NEEDS_REVIEW	-	-	-	-	-	-	-	156084	0	0	0	0	PASS	PASS	true
+B03-one-second-before-end	CANDIDATE	CANDIDATE	CANDIDATE	301	301	301	data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1	每日 10:00（含）至 17:00（不含）	95042	1	362	56	900	PASS	PASS	true
+B04-offset-upper-boundary	NEEDS_REVIEW	NEEDS_REVIEW	NEEDS_REVIEW	-	-	-	-	-	-	-	92375	0	0	0	0	PASS	PASS	true
+B05-wrong-top-chunk	NEEDS_REVIEW	NEEDS_REVIEW	NEEDS_REVIEW	-	-	-	-	-	-	-	46125	0	0	0	0	PASS	PASS	true
+# ruleExactCasePass=5/5
+# modelExactCasePass=5/5
+# outcomeAdvisorCitationAgreement=5/5
