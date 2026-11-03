@@ -39,8 +39,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ActiveProfiles("deepseek")
 class StructuredAdviceLiveEvaluationTest {
 
-    private static final Path INPUT = Path.of("data/eval/workflow/structured-advice-live-v1.json");
-    private static final Path OUTPUT = Path.of("target/eval/structured-advice-live-v1.tsv");
+    private static final Path INPUT = Path.of("data/eval/workflow/structured-advice-live-v2.json");
+    private static final Path OUTPUT = Path.of("target/eval/structured-advice-live-v2.tsv");
 
     @Autowired
     private ModelTextGenerator generator;
@@ -50,6 +50,12 @@ class StructuredAdviceLiveEvaluationTest {
 
     @Value("${spring.ai.openai.api-key}")
     private String apiKey;
+
+    @Value("${spring.ai.openai.chat.options.reasoning-effort}")
+    private String reasoningEffort;
+
+    @Value("${spring.ai.openai.chat.options.max-tokens}")
+    private int maxTokens;
 
     @Test
     void replayFixedSimulatedCasesAndSaveEveryResult() throws Exception {
@@ -67,8 +73,11 @@ class StructuredAdviceLiveEvaluationTest {
         report.append("# inputSha256=").append(hash(Files.readAllBytes(INPUT))).append('\n');
         report.append("# corpusSha256=").append(corpusHash()).append('\n');
         report.append("# promptVersion=").append(StructuredAdviceService.PROMPT_VERSION).append('\n');
+        report.append("# reasoningEffort=").append(reasoningEffort).append('\n');
+        report.append("# maxTokensPerCall=").append(maxTokens).append('\n');
         report.append("caseId\texpectedOutcome\tactualOutcome\texpectedAdvisorId\tactualAdvisorId")
-                .append("\texpectedCitationRef\tactualCitationRef\tquoteInSource\tmodelCalls")
+                .append("\texpectedCitationRef\tactualCitationRef\tquoteInSource")
+                .append("\texpectedModelCalls\tmodelCalls")
                 .append("\tmodelId\tpromptTokens\tcompletionTokens\telapsedMs\tpass\n");
         int passed = 0;
         long totalPromptTokens = 0;
@@ -105,14 +114,18 @@ class StructuredAdviceLiveEvaluationTest {
                             && row.text().contains(actual.citations().getFirst().quote()));
             String expectedRef = textOrDash(item.path("expectedCitationRef"));
             String expectedAdvisor = textOrDash(item.path("expectedAdvisorId"));
+            int expectedCalls = item.path("expectedModelCalls").asInt();
             boolean pass = actual.outcome().name().equals(item.path("expectedOutcome").asText())
                     && expectedAdvisor.equals(actual.advisorId() == null ? "-" : actual.advisorId().toString())
                     && expectedRef.equals(actualRef)
                     && (actual.outcome() == StructuredAdviceService.Outcome.NEEDS_REVIEW
                             ? actual.citations().isEmpty() : quoteInSource)
-                    && calls.get() >= 1 && calls.get() <= 2
-                    && actual.modelId() != null
-                    && (actual.promptTokens() > 0 || actual.completionTokens() > 0);
+                    && calls.get() == expectedCalls
+                    && (expectedCalls == 0
+                            ? actual.modelId() == null && actual.promptTokens() == 0
+                                    && actual.completionTokens() == 0
+                            : actual.modelId() != null
+                                    && (actual.promptTokens() > 0 || actual.completionTokens() > 0));
             if (pass) {
                 passed++;
             }
@@ -122,7 +135,8 @@ class StructuredAdviceLiveEvaluationTest {
                     item.path("expectedOutcome").asText(), actual.outcome().name(),
                     expectedAdvisor, actual.advisorId() == null ? "-" : actual.advisorId().toString(),
                     expectedRef, actualRef, Boolean.toString(quoteInSource),
-                    Integer.toString(calls.get()), actual.modelId() == null ? "-" : actual.modelId(),
+                    Integer.toString(expectedCalls), Integer.toString(calls.get()),
+                    actual.modelId() == null ? "-" : actual.modelId(),
                     Long.toString(actual.promptTokens()), Long.toString(actual.completionTokens()),
                     Long.toString(elapsedMs), pass ? "PASS" : "FAIL")).append('\n');
         }

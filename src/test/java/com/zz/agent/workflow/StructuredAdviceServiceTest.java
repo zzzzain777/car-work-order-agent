@@ -106,6 +106,23 @@ class StructuredAdviceServiceTest {
     }
 
     @Test
+    void wrongTopRuleWithoutApplicationTimeRangeStopsBeforeCallingModel() {
+        AtomicInteger calls = new AtomicInteger();
+        StructuredAdviceService service = new StructuredAdviceService((system, user) -> {
+            calls.incrementAndGet();
+            return new StructuredAdviceService.Completion(VALID_JSON, "deepseek-flash", 120, 35);
+        }, new ObjectMapper());
+
+        StructuredAdviceService.Advice advice = service.suggest(readyWithWrongTopPolicy());
+
+        assertEquals(StructuredAdviceService.Outcome.NEEDS_REVIEW, advice.outcome());
+        assertTrue(advice.message().contains("申请时间范围"));
+        assertEquals(0, calls.get());
+        assertEquals(0, advice.promptTokens());
+        assertEquals(0, advice.completionTokens());
+    }
+
+    @Test
     void aSingleTimestampWithTimezoneIsNotAnApplicationTimeRange() {
         String timestampQuote = """
                 {"advisorId":301,"citations":[{"sourceRef":"%s","quote":"2026-11-07T14:00:00+08:00"}]}
@@ -286,6 +303,22 @@ class StructuredAdviceServiceTest {
         JdbcAgentTaskStore.Task old = base.task();
         JdbcAgentTaskStore.Preview preview = new JdbcAgentTaskStore.Preview(old.preview().stage(),
                 List.of(SOURCE, SECOND_SOURCE), old.preview().advisors(), old.preview().observedAt());
+        JdbcAgentTaskStore.Task task = new JdbcAgentTaskStore.Task(old.id(), old.adminId(), old.workOrderId(),
+                old.orderType(), old.orderStatus(), old.orderAdvisorId(), old.orderUpdatedAt(), old.version(),
+                old.state(), old.supplement(), preview, old.updatedAt());
+        return new AgentTaskWorkflow.Refresh(task, result);
+    }
+
+    private static AgentTaskWorkflow.Refresh readyWithWrongTopPolicy() {
+        AgentTaskWorkflow.Refresh base = readyWithTwoPolicyRules();
+        List<PolicyEvidenceGate.Evidence> evidence = List.of(
+                base.result().policyEvidence().get(1), base.result().policyEvidence().getFirst());
+        ReadOnlyAdviceFlow.Result result = new ReadOnlyAdviceFlow.Result(base.result().stage(),
+                base.result().workOrderId(), base.result().message(), base.result().missingFields(),
+                evidence, base.result().advisors(), base.result().observedAt(), false);
+        JdbcAgentTaskStore.Task old = base.task();
+        JdbcAgentTaskStore.Preview preview = new JdbcAgentTaskStore.Preview(old.preview().stage(),
+                List.of(SECOND_SOURCE, SOURCE), old.preview().advisors(), old.preview().observedAt());
         JdbcAgentTaskStore.Task task = new JdbcAgentTaskStore.Task(old.id(), old.adminId(), old.workOrderId(),
                 old.orderType(), old.orderStatus(), old.orderAdvisorId(), old.orderUpdatedAt(), old.version(),
                 old.state(), old.supplement(), preview, old.updatedAt());

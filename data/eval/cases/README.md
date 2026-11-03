@@ -14,4 +14,4 @@ C02 另有[机器可读的模拟选店输入和预期结果](../store-selection/
 
 完整步骤与检查点见[阶段 0A 计划](../../../docs/superpowers/plans/2026-10-27-stage-0a-evaluation-cards.md)。
 
-另外，[三道结构化建议固定输入](../workflow/structured-advice-live-v1.json)已用于真实模型切片评测，逐例结果见[联调记录](../../../docs/verification/stage-1/structured-advice-live-evaluation.md)。它们单独检查模型建议与引用校验，不属于上述完整业务案例的最终成绩。
+另外，三道结构化建议模拟输入保留了[首轮](../workflow/structured-advice-live-v1.json)和[预算控制复测](../workflow/structured-advice-live-v2.json)两版预期，逐例结果见[联调记录](../../../docs/verification/stage-1/structured-advice-live-evaluation.md)。它们单独检查模型建议与引用校验，不属于上述完整业务案例的最终成绩。

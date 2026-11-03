@@ -32,7 +32,7 @@ Java 21 + Spring Boot 3.5.8 是当前**可启动骨架**的版本；pgvector 已
 
 另有[七个模拟案例的只读流程回放](docs/verification/stage-1/read-only-workflow-evaluation.md)：固定工单、政策、顾问和工作量响应，检查状态、出处、缺失信息与工具调用次数，逐例结果保存在 `data/eval/results/read-only-flow-v1.tsv`。本次暂定标准答案下为 7/7；它没有调用向量库或真实模型，不能当成完整 Agent 成绩。
 
-[三例真实模型结构化建议切片评测](docs/verification/stage-1/structured-advice-live-evaluation.md)记录了固定模拟输入、逐例引用、模型调用、Token 和耗时。其中两例生成候选、一例在错误首位政策片段下转人工；不包含真实检索或完整 Agent 成绩。
+[三例真实模型结构化建议切片评测](docs/verification/stage-1/structured-advice-live-evaluation.md)保留了优化前后两轮逐例结果：两例生成候选，一例在错误首位政策片段下转人工；新版在该反例中不再调用模型。它不包含真实检索或完整 Agent 成绩。
 
 ## 参考项目取舍
 

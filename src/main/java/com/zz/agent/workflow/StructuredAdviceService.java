@@ -76,6 +76,9 @@ public final class StructuredAdviceService {
         }
         JdbcAgentTaskStore.Task task = refresh.task();
         ReadOnlyAdviceFlow.Result result = refresh.result();
+        if (!APPLICATION_TIME_RANGE.matcher(result.policyEvidence().getFirst().text()).find()) {
+            return review("首位政策片段缺少申请时间范围，需人工核对", null);
+        }
         // 完整顾问列表留在任务快照中；模型只看只读流程排好序的前 50 位。
         List<ReadOnlyAdviceFlow.AdvisorLoad> candidates = result.advisors().subList(0,
                 Math.min(MAX_MODEL_ADVISORS, result.advisors().size()));

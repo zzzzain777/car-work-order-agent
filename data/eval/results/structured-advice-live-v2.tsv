@@ -1,0 +1,13 @@
+# scope=structured-advice-live-v2
+# inputSha256=133afcfdc6f3d1a0cc7b55f70a4c907630cac30a3eb52a06f3455b2baadd19cf
+# corpusSha256=c2b198f738c2514e324e24033634c622f324a863ee0a96d3213697fa83087cf0
+# promptVersion=advice-v3
+# reasoningEffort=none
+# maxTokensPerCall=512
+caseId	expectedOutcome	actualOutcome	expectedAdvisorId	actualAdvisorId	expectedCitationRef	actualCitationRef	quoteInSource	expectedModelCalls	modelCalls	modelId	promptTokens	completionTokens	elapsedMs	pass
+A01-normal	CANDIDATE	CANDIDATE	301	301	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-A-MX-7-test-drive-v1.md#rule-1	true	1	1	deepseek-flash	379	56	1440	PASS
+A02-multiple-chunks	CANDIDATE	CANDIDATE	301	301	data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1	data/policies/STORE-C-MX-7-test-drive-v1.md#rule-1	true	1	1	deepseek-flash	360	61	764	PASS
+A03-wrong-top-chunk	NEEDS_REVIEW	NEEDS_REVIEW	-	-	-	-	false	0	0	-	0	0	0	PASS
+# exactCasePass=3/3
+# reportedPromptTokens=739
+# reportedCompletionTokens=117

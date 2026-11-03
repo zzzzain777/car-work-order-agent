@@ -9,3 +9,5 @@ spring:
         completions-path: /chat/completions
         options:
           model: deepseek-flash
+          reasoning-effort: none
+          max-tokens: 512

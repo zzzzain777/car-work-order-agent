@@ -57,6 +57,8 @@ class DeepSeekFrameworkIntegrationTest {
         assertEquals("Bearer test-only-key", request.authorization());
         JsonNode body = JSON.readTree(request.body());
         assertEquals("deepseek-flash", body.path("model").asText());
+        assertEquals("none", body.path("reasoning_effort").asText());
+        assertEquals(512, body.path("max_tokens").asInt());
         assertEquals("只回答 OK", body.path("messages").get(0).path("content").asText());
     }
 
