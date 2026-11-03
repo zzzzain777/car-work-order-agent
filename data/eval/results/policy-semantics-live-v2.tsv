@@ -1,0 +1,12 @@
+# scope=policy-semantics-v2
+# inputSha256=1ec3283e4dce890273cc0d5e420aac8bbce5cfaf7d18ee468dbbdb35bc3c2e6a
+# systemPromptSha256=9073e59bf357971e78e6c1ce7141ea9ef761bc46eb906335b6724e1c70c64a29
+caseId	expectedVerdict	actualVerdict	requiredQuoteText	actualQuote	quoteInSource	containsRequiredText	modelId	promptTokens	completionTokens	elapsedMs	pass
+S04	DENY	DENY	每日 10:00（含）至 17:00（不含）	MX-7 试驾申请时间为每日 10:00（含）至 17:00（不含），按 Asia/Shanghai 时区判断。	true	true	deepseek-flash	242	44	1631	PASS
+S05	DENY	DENY	2026-11-07 全天暂停试驾申请	2026-11-07 全天暂停试驾申请。	true	true	deepseek-flash	250	23	806	PASS
+S06	DENY	DENY	周六和周日暂停试驾申请	但周六和周日暂停试驾申请。	true	true	deepseek-flash	235	19	1107	PASS
+S07	DENY	DENY	MX-7 的试驾申请时间为每日 10:00（含）至 15:00（不含）	MX-7 的试驾申请时间为每日 10:00（含）至 15:00（不含）	true	true	deepseek-flash	249	35	622	PASS
+S08	ALLOW	ALLOW	周六允许申请试驾	STORE-C 的 MX-7 试驾申请时间为每日 10:00（含）至 17:00（不含），按 Asia/Shanghai 时区判断。周六允许申请试驾，周日暂停申请试驾。	true	true	deepseek-flash	238	61	912	PASS
+# exactCasePass=5/5
+# reportedPromptTokens=1214
+# reportedCompletionTokens=182
